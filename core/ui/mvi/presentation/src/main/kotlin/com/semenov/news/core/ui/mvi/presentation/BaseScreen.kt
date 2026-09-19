@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.semenov.news.core.domain.model.NetworkError
 import com.semenov.news.core.ui.mvi.domain.model.UiState
 
 private const val ANIMATION_DURATION_MS = 300
@@ -46,7 +47,7 @@ fun <State : UiState> BaseScreen(
     val error = state.initialErrorState?.error
     val fadeSpec = remember { tween<Float>(ANIMATION_DURATION_MS) }
 
-    val isNoNetwork = error != null && error.isNoNetworkError()
+    val isNoNetwork = error is NetworkError.NoInternet
     val showOffline = isNoNetwork && state.hasContent.not()
     val showError = showOffline.not() && error != null && state.hasContent.not()
     val showSkeleton = showOffline.not() && showError.not() && state.hasContent.not()
@@ -112,12 +113,3 @@ fun DefaultErrorScreen(onRetryClick: () -> Unit = {}) {
         }
     }
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Replace with your own ApiException check once network module is connected.
- */
-private fun Throwable.isNoNetworkError(): Boolean =
-    message?.contains("network", ignoreCase = true) == true ||
-        message?.contains("Unable to resolve host", ignoreCase = true) == true

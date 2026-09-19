@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">Latest news</string>
+    <string name="home_search_hint">Search news</string>
+    <string name="home_empty_message">No news found</string>
+    <string name="home_error_message">Something went wrong</string>
+    <string name="home_offline_message">No internet connection</string>
+    <string name="home_timeout_message">The request took too long</string>
+    <string name="home_retry">Retry</string>
+    <string name="home_untitled_article">Untitled article</string>
+</resources>

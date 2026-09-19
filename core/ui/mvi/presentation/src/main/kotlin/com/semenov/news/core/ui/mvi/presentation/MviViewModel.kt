@@ -10,16 +10,12 @@ import com.semenov.news.core.ui.mvi.domain.model.UiState
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -32,6 +28,9 @@ abstract class MviViewModel<State : UiState, Partial : UiPartial, Intent : UiInt
 ) : ViewModel() {
     private val initialized = AtomicBoolean(false)
     private val _state = MutableStateFlow(initialState)
+    protected val currentState: State
+        get() = _state.value
+
     val state: StateFlow<State> by lazy(mode = LazyThreadSafetyMode.NONE) {
         initialize()
         _state.asStateFlow()
@@ -98,7 +97,7 @@ abstract class MviViewModel<State : UiState, Partial : UiPartial, Intent : UiInt
      * Reduce current [State] with [Partial] via [reduceWithPartial].
      * Logs state changes automatically.
      */
-    protected fun sendPartial(partial: Partial) {
+    protected suspend fun sendPartial(partial: Partial) {
         reduceState { old ->
             logger.log(tag, "Partial: $partial")
             reduceWithPartial(partial, old)
@@ -108,7 +107,7 @@ abstract class MviViewModel<State : UiState, Partial : UiPartial, Intent : UiInt
     /**
      * Define how [Partial] transforms [State].
      */
-    protected abstract fun reduceWithPartial(
+    protected abstract suspend fun reduceWithPartial(
         partial: Partial,
         old: State,
     ): State
@@ -129,24 +128,13 @@ abstract class MviViewModel<State : UiState, Partial : UiPartial, Intent : UiInt
 
     // ── Private ───────────────────────────────────────────────────────────────
 
-    private fun reduceState(block: (State) -> State) {
+    private suspend fun reduceState(block: suspend (State) -> State) {
         _state.update { old ->
             val new = block(old)
             if (old != new) logger.log(tag, "State: $old → $new")
             new
         }
     }
-
-    /**
-     * Method to encapsulate flow binding.
-     */
-    protected fun <T> Flow<T>.bind(action: suspend (value: T) -> Unit) =
-        onEach(action)
-            .catch { throwable ->
-                if (throwable is CancellationException) throw throwable
-                logError(throwable, "bind function")
-                handleError(throwable)
-            }.launchIn(scope)
 
     protected open suspend fun handleError(
         error: Throwable,
