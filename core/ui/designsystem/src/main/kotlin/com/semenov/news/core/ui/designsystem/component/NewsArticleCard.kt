@@ -28,8 +28,28 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import coil3.compose.AsyncImage
+import com.semenov.news.core.domain.model.Article
 import com.semenov.news.core.ui.designsystem.theme.NewsSizes
 import com.semenov.news.core.ui.designsystem.theme.NewsSpacing
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+
+@Composable
+fun NewsArticleCard(
+    article: Article,
+    untitledArticle: String,
+    modifier: Modifier = Modifier,
+) {
+    NewsArticleCard(
+        title = article.title?.takeIf(String::isNotBlank) ?: untitledArticle,
+        description = article.description,
+        metadata = article.metadata(),
+        imageUrl = article.imageUrl,
+        modifier = modifier,
+    )
+}
 
 @Composable
 fun NewsArticleCard(
@@ -167,3 +187,22 @@ fun NewsArticleSkeleton(
         }
     }
 }
+
+private fun Article.metadata(): String? {
+    val parts =
+        listOfNotNull(
+            source?.takeIf(String::isNotBlank),
+            publishedAt.toDisplayDate(),
+        )
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(METADATA_SEPARATOR)
+}
+
+private fun String?.toDisplayDate(): String? =
+    this?.let { value ->
+        runCatching {
+            DATE_FORMATTER.format(Instant.parse(value).atZone(ZoneId.systemDefault()))
+        }.getOrNull()
+    }
+
+private const val METADATA_SEPARATOR = "  •  "
+private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)

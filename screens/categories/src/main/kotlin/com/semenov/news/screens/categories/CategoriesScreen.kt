@@ -1,7 +1,8 @@
-package com.semenov.news.screens.home
+package com.semenov.news.screens.categories
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,57 +12,67 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusManager
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.semenov.news.core.domain.model.NetworkError
+import com.semenov.news.core.domain.model.NewsCategory
 import com.semenov.news.core.ui.designsystem.component.NewsArticleCard
 import com.semenov.news.core.ui.designsystem.component.NewsEmptyState
 import com.semenov.news.core.ui.designsystem.component.NewsErrorState
 import com.semenov.news.core.ui.designsystem.component.NewsInlineError
 import com.semenov.news.core.ui.designsystem.theme.NewsSpacing
 import com.semenov.news.core.ui.mvi.presentation.BaseScreen
-import com.semenov.news.screens.home.components.HomeSkeleton
-import com.semenov.news.screens.home.model.HomeIntent
-import com.semenov.news.screens.home.model.HomeState
+import com.semenov.news.screens.categories.components.CategoriesSkeleton
+import com.semenov.news.screens.categories.model.CategoriesIntent
+import com.semenov.news.screens.categories.model.CategoriesState
 
 @Composable
-fun HomeScreen(
-    viewModel: HomeViewModel = viewModel(),
+fun CategoriesScreen(
+    viewModel: CategoriesViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val focusManager = LocalFocusManager.current
+    CategoriesContent(
+        state = state,
+        onInitialize = viewModel::initialize,
+        onIntent = viewModel::processIntent,
+    )
+}
+
+@Composable
+internal fun CategoriesContent(
+    state: CategoriesState,
+    onInitialize: () -> Unit,
+    onIntent: (CategoriesIntent) -> Unit,
+) {
     BaseScreen(
         state = state,
-        init = viewModel::initialize,
-        skeleton = { HomeSkeleton() },
+        init = onInitialize,
+        skeleton = { CategoriesSkeleton() },
         offlineContent = {
             NewsErrorState(
-                message = stringResource(R.string.home_offline_message),
-                retryLabel = stringResource(R.string.home_retry),
-                onRetry = { viewModel.processIntent(HomeIntent.Retry) },
+                message = stringResource(R.string.categories_offline_message),
+                retryLabel = stringResource(R.string.categories_retry),
+                onRetry = { onIntent(CategoriesIntent.Retry) },
             )
         },
         errorContent = {
             NewsErrorState(
                 message = state.error.toUserMessage(),
-                retryLabel = stringResource(R.string.home_retry),
-                onRetry = { viewModel.processIntent(HomeIntent.Retry) },
+                retryLabel = stringResource(R.string.categories_retry),
+                onRetry = { onIntent(CategoriesIntent.Retry) },
             )
         },
     ) {
@@ -72,20 +83,19 @@ fun HomeScreen(
                     .statusBarsPadding()
                     .navigationBarsPadding(),
         ) {
-            HomeHeader(
-                query = state.query,
-                isSearching = state.isSearching,
-                focusManager = focusManager,
-                onQueryChanged = { viewModel.processIntent(HomeIntent.SearchQueryChanged(it)) },
+            CategoriesHeader(
+                selectedCategory = state.selectedCategory,
+                isSwitchingCategory = state.isSwitchingCategory,
+                onCategorySelected = { onIntent(CategoriesIntent.CategorySelected(it)) },
             )
             if (state.error != null) {
                 NewsInlineError(
                     message = state.error.toUserMessage(),
-                    retryLabel = stringResource(R.string.home_retry),
-                    onRetry = { viewModel.processIntent(HomeIntent.Retry) },
+                    retryLabel = stringResource(R.string.categories_retry),
+                    onRetry = { onIntent(CategoriesIntent.Retry) },
                 )
             }
-            HomeContent(
+            CategoryArticles(
                 modifier = Modifier.weight(1f),
                 state = state,
             )
@@ -94,38 +104,40 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(
-    query: String,
-    isSearching: Boolean,
-    focusManager: FocusManager,
-    onQueryChanged: (String) -> Unit,
+private fun CategoriesHeader(
+    selectedCategory: NewsCategory,
+    isSwitchingCategory: Boolean,
+    onCategorySelected: (NewsCategory) -> Unit,
 ) {
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(
-                    start = NewsSpacing.medium,
-                    top = NewsSpacing.medium,
-                    end = NewsSpacing.medium,
-                ),
+                .padding(top = NewsSpacing.medium),
     ) {
         Text(
-            text = stringResource(R.string.home_title),
+            text = stringResource(R.string.categories_title),
+            modifier = Modifier.padding(horizontal = NewsSpacing.medium),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.height(NewsSpacing.medium))
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChanged,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.home_search_hint)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = NewsSpacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(NewsSpacing.small),
+        ) {
+            items(
+                items = CATEGORY_ORDER,
+                key = NewsCategory::apiValue,
+            ) { category ->
+                FilterChip(
+                    selected = category == selectedCategory,
+                    onClick = { onCategorySelected(category) },
+                    label = { Text(category.label()) },
+                )
+            }
+        }
         Box(
             modifier =
                 Modifier
@@ -133,7 +145,7 @@ private fun HomeHeader(
                     .height(NewsSpacing.extraSmall),
             contentAlignment = Alignment.Center,
         ) {
-            if (isSearching) {
+            if (isSwitchingCategory) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
         }
@@ -141,13 +153,13 @@ private fun HomeHeader(
 }
 
 @Composable
-private fun HomeContent(
+private fun CategoryArticles(
     modifier: Modifier,
-    state: HomeState,
+    state: CategoriesState,
 ) {
     if (state.articles.isEmpty() && state.error == null) {
         NewsEmptyState(
-            message = stringResource(R.string.home_empty_message),
+            message = stringResource(R.string.categories_empty_message),
             modifier = modifier,
         )
         return
@@ -169,16 +181,41 @@ private fun HomeContent(
         ) { _, article ->
             NewsArticleCard(
                 article = article,
-                untitledArticle = stringResource(R.string.home_untitled_article),
+                untitledArticle = stringResource(R.string.categories_untitled_article),
             )
         }
     }
 }
 
 @Composable
+private fun NewsCategory.label(): String =
+    stringResource(
+        when (this) {
+            NewsCategory.BUSINESS -> R.string.category_business
+            NewsCategory.ENTERTAINMENT -> R.string.category_entertainment
+            NewsCategory.GENERAL -> R.string.category_general
+            NewsCategory.HEALTH -> R.string.category_health
+            NewsCategory.SCIENCE -> R.string.category_science
+            NewsCategory.SPORTS -> R.string.category_sports
+            NewsCategory.TECHNOLOGY -> R.string.category_technology
+        },
+    )
+
+@Composable
 private fun NetworkError?.toUserMessage(): String =
     when (this) {
-        NetworkError.NoInternet -> stringResource(R.string.home_offline_message)
-        NetworkError.Timeout -> stringResource(R.string.home_timeout_message)
-        else -> stringResource(R.string.home_error_message)
+        NetworkError.NoInternet -> stringResource(R.string.categories_offline_message)
+        NetworkError.Timeout -> stringResource(R.string.categories_timeout_message)
+        else -> stringResource(R.string.categories_error_message)
     }
+
+private val CATEGORY_ORDER =
+    listOf(
+        NewsCategory.GENERAL,
+        NewsCategory.BUSINESS,
+        NewsCategory.TECHNOLOGY,
+        NewsCategory.SPORTS,
+        NewsCategory.SCIENCE,
+        NewsCategory.HEALTH,
+        NewsCategory.ENTERTAINMENT,
+    )

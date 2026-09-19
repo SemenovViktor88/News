@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="categories_title">Categories</string>
+    <string name="categories_empty_message">No news found for this category</string>
+    <string name="categories_error_message">Something went wrong</string>
+    <string name="categories_offline_message">No internet connection</string>
+    <string name="categories_timeout_message">The request took too long</string>
+    <string name="categories_retry">Retry</string>
+    <string name="categories_untitled_article">Untitled article</string>
+    <string name="category_business">Business</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_general">General</string>
+    <string name="category_health">Health</string>
+    <string name="category_science">Science</string>
+    <string name="category_sports">Sports</string>
+    <string name="category_technology">Technology</string>
+</resources>
