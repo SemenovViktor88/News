@@ -4,8 +4,8 @@ import com.semenov.news.core.domain.AppLogger
 import com.semenov.news.core.domain.model.DataResult
 import com.semenov.news.core.domain.model.NewsCategory
 import com.semenov.news.core.domain.model.TopHeadlinesRequest
-import com.semenov.news.core.domain.repository.NewsRepository
 import com.semenov.news.core.ui.mvi.presentation.MviViewModel
+import com.semenov.news.features.news.domain.repository.NewsRepository
 import com.semenov.news.screens.categories.model.CategoriesEffect
 import com.semenov.news.screens.categories.model.CategoriesIntent
 import com.semenov.news.screens.categories.model.CategoriesPartial

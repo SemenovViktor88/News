@@ -8,9 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -79,9 +77,7 @@ internal fun CategoriesContent(
         Column(
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding(),
+                    .fillMaxSize(),
         ) {
             CategoriesHeader(
                 selectedCategory = state.selectedCategory,
@@ -117,7 +113,10 @@ private fun CategoriesHeader(
     ) {
         Text(
             text = stringResource(R.string.categories_title),
-            modifier = Modifier.padding(horizontal = NewsSpacing.medium),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = NewsSpacing.medium),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,

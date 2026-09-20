@@ -10,7 +10,7 @@ import com.semenov.news.core.domain.model.NewsSource
 import com.semenov.news.core.domain.model.SearchNewsRequest
 import com.semenov.news.core.domain.model.SourcesRequest
 import com.semenov.news.core.domain.model.TopHeadlinesRequest
-import com.semenov.news.core.domain.repository.NewsRepository
+import com.semenov.news.features.news.domain.repository.NewsRepository
 import com.semenov.news.screens.categories.model.CategoriesIntent
 import com.semenov.news.screens.categories.reducer.CategoriesReducer
 import java.util.ArrayDeque

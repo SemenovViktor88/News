@@ -23,7 +23,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":features:home:domain"))
+    implementation(project(":features:news:domain"))
     implementation(project(":core:domain"))
     implementation(project(":core:ui:mvi:domain"))
     implementation(project(":core:ui:mvi:presentation"))

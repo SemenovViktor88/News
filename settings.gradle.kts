@@ -36,10 +36,9 @@ include(":core:ui:navigation:domain")
 include(":core:ui:navigation:presentation")
 include(":core:ui:designsystem")
 
-include(":features:home:domain")
-include(":features:home:data")
-include(":features:categories:domain")
-include(":features:categories:data")
+include(":features:news:domain")
+include(":features:news:data")
 
 include(":screens:home")
 include(":screens:categories")
+include(":core:logging")

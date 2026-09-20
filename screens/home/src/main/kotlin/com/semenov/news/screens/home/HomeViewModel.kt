@@ -5,8 +5,8 @@ import com.semenov.news.core.domain.model.DataResult
 import com.semenov.news.core.domain.model.NewsPage
 import com.semenov.news.core.domain.model.SearchNewsRequest
 import com.semenov.news.core.domain.model.TopHeadlinesRequest
-import com.semenov.news.core.domain.repository.NewsRepository
 import com.semenov.news.core.ui.mvi.presentation.MviViewModel
+import com.semenov.news.features.news.domain.repository.NewsRepository
 import com.semenov.news.screens.home.model.HomeEffect
 import com.semenov.news.screens.home.model.HomeIntent
 import com.semenov.news.screens.home.model.HomePartial
