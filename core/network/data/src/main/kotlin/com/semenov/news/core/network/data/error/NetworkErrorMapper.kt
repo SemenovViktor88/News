@@ -1,24 +1,22 @@
 package com.semenov.news.core.network.data.error
 
 import com.semenov.news.core.domain.model.NetworkError
-import com.semenov.news.core.network.data.model.NewsApiErrorDto
 import io.ktor.client.call.DoubleReceiveException
 import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.JsonConvertException
-import kotlinx.serialization.SerializationException
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import kotlinx.serialization.SerializationException
 
-internal fun mapHttpError(
+fun mapHttpError(
     status: HttpStatusCode,
-    error: NewsApiErrorDto?,
-): NetworkError {
-    val message = error?.message
-    return when (status) {
+    message: String?,
+): NetworkError =
+    when (status) {
         HttpStatusCode.BadRequest -> NetworkError.BadRequest(message)
         HttpStatusCode.Unauthorized -> NetworkError.Unauthorized(message)
         HttpStatusCode.TooManyRequests -> NetworkError.RateLimited(message)
@@ -30,24 +28,26 @@ internal fun mapHttpError(
             NetworkError.Unknown(message ?: "Unexpected HTTP status ${status.value}")
         }
     }
-}
 
-internal fun mapApiErrorCode(error: NewsApiErrorDto?): NetworkError =
-    when (error?.code) {
+fun mapApiErrorCode(
+    code: String?,
+    message: String?,
+): NetworkError =
+    when (code) {
         "apiKeyDisabled",
         "apiKeyInvalid",
         "apiKeyMissing",
-        -> NetworkError.Unauthorized(error.message)
+        -> NetworkError.Unauthorized(message)
 
         "apiKeyExhausted",
         "rateLimited",
-        -> NetworkError.RateLimited(error.message)
+        -> NetworkError.RateLimited(message)
 
-        "unexpectedError" -> NetworkError.ServerError(HttpStatusCode.InternalServerError.value, error.message)
-        else -> NetworkError.BadRequest(error?.message)
+        "unexpectedError" -> NetworkError.ServerError(HttpStatusCode.InternalServerError.value, message)
+        else -> NetworkError.BadRequest(message)
     }
 
-internal fun Throwable.toNetworkError(): NetworkError =
+fun Throwable.toNetworkError(): NetworkError =
     when (this) {
         is HttpRequestTimeoutException,
         is ConnectTimeoutException,

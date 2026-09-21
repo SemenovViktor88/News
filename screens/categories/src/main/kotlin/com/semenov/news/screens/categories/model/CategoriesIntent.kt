@@ -9,4 +9,8 @@ sealed interface CategoriesIntent : UiIntent {
     data class CategorySelected(val category: NewsCategory) : CategoriesIntent
 
     data object Retry : CategoriesIntent
+
+    data object LoadMore : CategoriesIntent
+
+    data object RetryLoadMore : CategoriesIntent
 }

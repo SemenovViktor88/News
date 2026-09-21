@@ -1,8 +1,8 @@
-package com.semenov.news.core.network.data.datasource
+package com.semenov.news.features.news.data.datasource
 
 import com.semenov.news.core.domain.model.DataResult
-import com.semenov.news.core.domain.model.NewsPage
 import com.semenov.news.core.domain.model.NetworkError
+import com.semenov.news.core.domain.model.NewsPage
 import com.semenov.news.core.domain.model.NewsSource
 import com.semenov.news.core.domain.model.SearchNewsRequest
 import com.semenov.news.core.domain.model.SourcesRequest
@@ -10,24 +10,25 @@ import com.semenov.news.core.domain.model.TopHeadlinesRequest
 import com.semenov.news.core.network.data.error.mapApiErrorCode
 import com.semenov.news.core.network.data.error.mapHttpError
 import com.semenov.news.core.network.data.error.toNetworkError
-import com.semenov.news.core.network.data.mapper.toDomain
-import com.semenov.news.core.network.data.model.NewsApiErrorDto
-import com.semenov.news.core.network.data.model.NewsResponseDto
-import com.semenov.news.core.network.data.model.SourcesResponseDto
 import com.semenov.news.core.network.domain.ApiContract
+import com.semenov.news.features.news.data.mapper.toDomain
+import com.semenov.news.features.news.data.model.NewsApiErrorDto
+import com.semenov.news.features.news.data.model.NewsResponseDto
+import com.semenov.news.features.news.data.model.SourcesResponseDto
+import com.semenov.news.features.news.domain.datasource.NewsRemoteDataSourse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.isSuccess
-import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
-class NewsApiDataSource @Inject constructor(
+class NewsRemoteDataSourseImpl @Inject constructor(
     private val httpClient: HttpClient,
-) {
-    suspend fun getTopHeadlines(request: TopHeadlinesRequest): DataResult<NewsPage> =
+) : NewsRemoteDataSourse {
+    override suspend fun getTopHeadlines(request: TopHeadlinesRequest): DataResult<NewsPage> =
         executeRequest(
             request = {
                 httpClient.get(ApiContract.Endpoints.TOP_HEADLINES) {
@@ -50,7 +51,7 @@ class NewsApiDataSource @Inject constructor(
             },
         )
 
-    suspend fun searchNews(request: SearchNewsRequest): DataResult<NewsPage> =
+    override suspend fun searchNews(request: SearchNewsRequest): DataResult<NewsPage> =
         executeRequest(
             request = {
                 httpClient.get(ApiContract.Endpoints.EVERYTHING) {
@@ -71,7 +72,7 @@ class NewsApiDataSource @Inject constructor(
             },
         )
 
-    suspend fun getSources(request: SourcesRequest = SourcesRequest()): DataResult<List<NewsSource>> =
+    override suspend fun getSources(request: SourcesRequest): DataResult<List<NewsSource>> =
         executeRequest(
             request = {
                 httpClient.get(ApiContract.Endpoints.SOURCES) {
@@ -100,7 +101,7 @@ class NewsApiDataSource @Inject constructor(
             val response = request()
             if (!response.status.isSuccess()) {
                 val error = response.errorBodyOrNull()
-                DataResult.Failure(mapHttpError(response.status, error))
+                DataResult.Failure(mapHttpError(response.status, error?.message))
             } else {
                 val body = parse(response)
                 when (body.status) {
@@ -108,11 +109,8 @@ class NewsApiDataSource @Inject constructor(
                     API_STATUS_ERROR ->
                         DataResult.Failure(
                             mapApiErrorCode(
-                                NewsApiErrorDto(
-                                    status = body.status,
-                                    code = body.code,
-                                    message = body.message,
-                                ),
+                                code = body.code,
+                                message = body.message,
                             ),
                         )
 

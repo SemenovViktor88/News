@@ -8,4 +8,8 @@ sealed interface HomeIntent : UiIntent {
     data class SearchQueryChanged(val query: String) : HomeIntent
 
     data object Retry : HomeIntent
+
+    data object LoadMore : HomeIntent
+
+    data object RetryLoadMore : HomeIntent
 }

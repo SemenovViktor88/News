@@ -1,10 +1,10 @@
-package com.semenov.news.core.network.data.mapper
+package com.semenov.news.features.news.data.mapper
 
 import com.semenov.news.core.domain.model.NewsCategory
-import com.semenov.news.core.network.data.model.ArticleDto
-import com.semenov.news.core.network.data.model.NewsResponseDto
-import com.semenov.news.core.network.data.model.SourceDto
-import com.semenov.news.core.network.data.model.SourcesResponseDto
+import com.semenov.news.features.news.data.model.ArticleDto
+import com.semenov.news.features.news.data.model.NewsResponseDto
+import com.semenov.news.features.news.data.model.SourceDto
+import com.semenov.news.features.news.data.model.SourcesResponseDto
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

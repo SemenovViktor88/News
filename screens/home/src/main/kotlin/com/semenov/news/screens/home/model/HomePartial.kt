@@ -7,9 +7,24 @@ import com.semenov.news.core.ui.mvi.domain.model.UiPartial
 sealed interface HomePartial : UiPartial {
     data class QueryChanged(val query: String) : HomePartial
 
-    data class Loading(val keepContent: Boolean) : HomePartial
+    data class FirstPageLoading(val clearContent: Boolean) : HomePartial
 
-    data class Success(val articles: List<Article>) : HomePartial
+    data class CacheLoaded(val articles: List<Article>) : HomePartial
 
-    data class Failure(val error: NetworkError) : HomePartial
+    data class FirstPageSuccess(
+        val articles: List<Article>,
+        val totalResults: Int,
+    ) : HomePartial
+
+    data class FirstPageFailure(val error: NetworkError) : HomePartial
+
+    data object LoadMoreStarted : HomePartial
+
+    data class LoadMoreSuccess(
+        val page: Int,
+        val articles: List<Article>,
+        val totalResults: Int,
+    ) : HomePartial
+
+    data class LoadMoreFailure(val error: NetworkError) : HomePartial
 }

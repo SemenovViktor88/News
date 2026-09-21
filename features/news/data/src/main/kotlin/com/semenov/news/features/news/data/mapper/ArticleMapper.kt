@@ -1,13 +1,13 @@
-package com.semenov.news.core.network.data.mapper
+package com.semenov.news.features.news.data.mapper
 
 import com.semenov.news.core.domain.model.Article
-import com.semenov.news.core.domain.model.NewsPage
 import com.semenov.news.core.domain.model.NewsCategory
+import com.semenov.news.core.domain.model.NewsPage
 import com.semenov.news.core.domain.model.NewsSource
-import com.semenov.news.core.network.data.model.ArticleDto
-import com.semenov.news.core.network.data.model.NewsResponseDto
-import com.semenov.news.core.network.data.model.SourceDto
-import com.semenov.news.core.network.data.model.SourcesResponseDto
+import com.semenov.news.features.news.data.model.ArticleDto
+import com.semenov.news.features.news.data.model.NewsResponseDto
+import com.semenov.news.features.news.data.model.SourceDto
+import com.semenov.news.features.news.data.model.SourcesResponseDto
 
 internal fun ArticleDto.toDomain(): Article =
     Article(

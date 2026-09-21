@@ -1,4 +1,4 @@
-package com.semenov.news.core.network.data.model
+package com.semenov.news.features.news.data.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

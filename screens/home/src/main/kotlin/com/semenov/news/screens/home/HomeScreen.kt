@@ -10,14 +10,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
@@ -37,6 +41,8 @@ import com.semenov.news.core.ui.mvi.presentation.BaseScreen
 import com.semenov.news.screens.home.components.HomeSkeleton
 import com.semenov.news.screens.home.model.HomeIntent
 import com.semenov.news.screens.home.model.HomeState
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 
 @Composable
 fun HomeScreen(
@@ -84,6 +90,8 @@ fun HomeScreen(
             HomeContent(
                 modifier = Modifier.weight(1f),
                 state = state,
+                onLoadMore = { viewModel.processIntent(HomeIntent.LoadMore) },
+                onRetryLoadMore = { viewModel.processIntent(HomeIntent.RetryLoadMore) },
             )
         }
     }
@@ -140,6 +148,8 @@ private fun HomeHeader(
 private fun HomeContent(
     modifier: Modifier,
     state: HomeState,
+    onLoadMore: () -> Unit,
+    onRetryLoadMore: () -> Unit,
 ) {
     if (state.articles.isEmpty() && state.error == null) {
         NewsEmptyState(
@@ -149,8 +159,21 @@ private fun HomeContent(
         return
     }
 
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            layoutInfo.totalItemsCount > 0 &&
+                lastVisibleIndex >= layoutInfo.totalItemsCount - LOAD_MORE_THRESHOLD - 1
+        }.distinctUntilChanged()
+            .filter { shouldLoadMore -> shouldLoadMore }
+            .collect { onLoadMore() }
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
+        state = listState,
         contentPadding =
             PaddingValues(
                 start = NewsSpacing.medium,
@@ -168,6 +191,25 @@ private fun HomeContent(
                 untitledArticle = stringResource(R.string.home_untitled_article),
             )
         }
+        if (state.isLoadingMore) {
+            item(key = "load-more-progress") {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(NewsSpacing.medium),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+        state.loadMoreError?.let { error ->
+            item(key = "load-more-error") {
+                NewsInlineError(
+                    message = error.toUserMessage(),
+                    retryLabel = stringResource(R.string.home_retry),
+                    onRetry = onRetryLoadMore,
+                )
+            }
+        }
     }
 }
 
@@ -178,3 +220,5 @@ private fun NetworkError?.toUserMessage(): String =
         NetworkError.Timeout -> stringResource(R.string.home_timeout_message)
         else -> stringResource(R.string.home_error_message)
     }
+
+private const val LOAD_MORE_THRESHOLD = 3

@@ -1,14 +1,13 @@
 package com.semenov.news.core.network.data.error
 
 import com.semenov.news.core.domain.model.NetworkError
-import com.semenov.news.core.network.data.model.NewsApiErrorDto
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.http.HttpStatusCode
+import java.net.UnknownHostException
 import kotlinx.serialization.SerializationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.net.UnknownHostException
 
 class NetworkErrorMapperTest {
     @Test
@@ -21,35 +20,22 @@ class NetworkErrorMapperTest {
     }
 
     @Test
-    fun `keeps API error message without exposing provider code`() {
-        val error =
-            mapHttpError(
-                HttpStatusCode.Unauthorized,
-                NewsApiErrorDto(
-                    status = "error",
-                    code = "apiKeyInvalid",
-                    message = "The API key is invalid.",
-                ),
-            )
-
+    fun `keeps error message`() {
         assertEquals(
             NetworkError.Unauthorized("The API key is invalid."),
-            error,
+            mapHttpError(HttpStatusCode.Unauthorized, "The API key is invalid."),
         )
     }
 
     @Test
-    fun `maps API error code when an error body arrives with success status`() {
-        val error =
+    fun `maps API error code`() {
+        assertEquals(
+            NetworkError.RateLimited("Try again later."),
             mapApiErrorCode(
-                NewsApiErrorDto(
-                    status = "error",
-                    code = "rateLimited",
-                    message = "Try again later.",
-                ),
-            )
-
-        assertEquals(NetworkError.RateLimited("Try again later."), error)
+                code = "rateLimited",
+                message = "Try again later.",
+            ),
+        )
     }
 
     @Test

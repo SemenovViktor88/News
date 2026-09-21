@@ -10,6 +10,10 @@ data class HomeState(
     val articles: List<Article> = emptyList(),
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val loadMoreError: NetworkError? = null,
+    val hasMore: Boolean = true,
+    val currentPage: Int = 1,
     val hasLoaded: Boolean = false,
     val error: NetworkError? = null,
 ) : UiState {

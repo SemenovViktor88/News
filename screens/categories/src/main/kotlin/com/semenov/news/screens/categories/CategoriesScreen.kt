@@ -13,12 +13,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,6 +40,8 @@ import com.semenov.news.core.ui.mvi.presentation.BaseScreen
 import com.semenov.news.screens.categories.components.CategoriesSkeleton
 import com.semenov.news.screens.categories.model.CategoriesIntent
 import com.semenov.news.screens.categories.model.CategoriesState
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 
 @Composable
 fun CategoriesScreen(
@@ -94,6 +100,8 @@ internal fun CategoriesContent(
             CategoryArticles(
                 modifier = Modifier.weight(1f),
                 state = state,
+                onLoadMore = { onIntent(CategoriesIntent.LoadMore) },
+                onRetryLoadMore = { onIntent(CategoriesIntent.RetryLoadMore) },
             )
         }
     }
@@ -155,6 +163,8 @@ private fun CategoriesHeader(
 private fun CategoryArticles(
     modifier: Modifier,
     state: CategoriesState,
+    onLoadMore: () -> Unit,
+    onRetryLoadMore: () -> Unit,
 ) {
     if (state.articles.isEmpty() && state.error == null) {
         NewsEmptyState(
@@ -164,8 +174,21 @@ private fun CategoryArticles(
         return
     }
 
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            layoutInfo.totalItemsCount > 0 &&
+                lastVisibleIndex >= layoutInfo.totalItemsCount - LOAD_MORE_THRESHOLD - 1
+        }.distinctUntilChanged()
+            .filter { shouldLoadMore -> shouldLoadMore }
+            .collect { onLoadMore() }
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
+        state = listState,
         contentPadding =
             PaddingValues(
                 start = NewsSpacing.medium,
@@ -182,6 +205,25 @@ private fun CategoryArticles(
                 article = article,
                 untitledArticle = stringResource(R.string.categories_untitled_article),
             )
+        }
+        if (state.isLoadingMore) {
+            item(key = "load-more-progress") {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(NewsSpacing.medium),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+        state.loadMoreError?.let { error ->
+            item(key = "load-more-error") {
+                NewsInlineError(
+                    message = error.toUserMessage(),
+                    retryLabel = stringResource(R.string.categories_retry),
+                    onRetry = onRetryLoadMore,
+                )
+            }
         }
     }
 }
@@ -218,3 +260,5 @@ private val CATEGORY_ORDER =
         NewsCategory.HEALTH,
         NewsCategory.ENTERTAINMENT,
     )
+
+private const val LOAD_MORE_THRESHOLD = 3

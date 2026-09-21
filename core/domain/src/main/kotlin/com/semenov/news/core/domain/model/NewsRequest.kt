@@ -2,6 +2,22 @@ package com.semenov.news.core.domain.model
 
 private const val MAX_PAGE_SIZE = 100
 
+sealed interface NewsRequest {
+    data object Feed : NewsRequest
+
+    data class Search(val query: String) : NewsRequest {
+        init {
+            require(query.isNotBlank()) { "Search query must not be blank" }
+        }
+    }
+
+    data class Category(val category: String) : NewsRequest {
+        init {
+            require(category.isNotBlank()) { "Category must not be blank" }
+        }
+    }
+}
+
 enum class NewsCategory(val apiValue: String) {
     BUSINESS("business"),
     ENTERTAINMENT("entertainment"),
