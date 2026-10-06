@@ -264,6 +264,74 @@ class HomeViewModelTest {
         viewModel.processIntent(HomeIntent.LoadMore)
         advanceUntilIdle()
         assertEquals(listOf(1, 2, 3, 4, 5), repository.calls.map(LoadCall::page))
+        assertEquals(listOf(2, 3, 4, 5), repository.prefetches.map(LoadCall::page))
+    }
+
+    @Test
+    fun `first page is refreshed from network and the next page is prefetched into the database`() =
+        runTest(dispatcher) {
+            val repository = FakeNewsRepository { _, page -> successPage("Page", page) }
+            val viewModel = createViewModel(repository)
+            viewModel.state
+            advanceUntilIdle()
+
+            assertEquals(listOf(1), repository.forcedRefreshPages)
+            assertEquals(listOf(LoadCall(NewsRequest.Feed, 2)), repository.prefetches)
+
+            viewModel.processIntent(HomeIntent.LoadMore)
+            advanceUntilIdle()
+
+            assertEquals(listOf(1), repository.forcedRefreshPages)
+            assertEquals(listOf(2, 3), repository.prefetches.map(LoadCall::page))
+        }
+
+    @Test
+    fun `load more waits for the running prefetch instead of requesting the page twice`() =
+        runTest(dispatcher) {
+            val prefetch = CompletableDeferred<DataResult<Unit>>()
+            val repository =
+                FakeNewsRepository(
+                    prefetchResponse = { _, page -> if (page == 2) prefetch.await() else DataResult.Success(Unit) },
+                    response = { _, page -> successPage("Page", page) },
+                )
+            val viewModel = createViewModel(repository)
+            val state = viewModel.state
+            advanceUntilIdle()
+
+            viewModel.processIntent(HomeIntent.LoadMore)
+            runCurrent()
+
+            assertTrue(state.value.isLoadingMore)
+            assertEquals(listOf(1), repository.calls.map(LoadCall::page))
+
+            prefetch.complete(DataResult.Success(Unit))
+            advanceUntilIdle()
+
+            assertEquals(listOf(1, 2), repository.calls.map(LoadCall::page))
+            assertEquals(40, state.value.articles.size)
+        }
+
+    @Test
+    fun `offline start shows cached first page and keeps pagination available`() = runTest(dispatcher) {
+        val repository =
+            FakeNewsRepository(
+                cached = mapOf(NewsRequest.Feed to successArticles("Cached", page = 1)),
+                response = { _, page -> if (page == 1) failure() else successPage("Cached", page) },
+            )
+        val viewModel = createViewModel(repository)
+        val state = viewModel.state
+        advanceUntilIdle()
+
+        assertEquals(20, state.value.articles.size)
+        assertNull(state.value.error)
+        assertTrue(state.value.hasMore)
+        assertTrue(repository.prefetches.isEmpty())
+
+        viewModel.processIntent(HomeIntent.LoadMore)
+        advanceUntilIdle()
+
+        assertEquals(40, state.value.articles.size)
+        assertEquals(2, state.value.currentPage)
     }
 
     private fun createViewModel(repository: NewsRepository) =
@@ -275,20 +343,38 @@ class HomeViewModelTest {
 
     private class FakeNewsRepository(
         private val cached: Map<NewsRequest, List<Article>> = emptyMap(),
+        private val prefetchResponse: suspend (NewsRequest, Int) -> DataResult<Unit> = { _, _ ->
+            DataResult.Success(Unit)
+        },
         private val response: suspend (NewsRequest, Int) -> DataResult<NewsPage>,
     ) : NewsRepository {
         val calls = mutableListOf<LoadCall>()
+        val forcedRefreshPages = mutableListOf<Int>()
+        val prefetches = mutableListOf<LoadCall>()
 
         override suspend fun loadPage(
             request: NewsRequest,
             page: Int,
+            forceRefresh: Boolean,
         ): DataResult<NewsPage> {
             calls += LoadCall(request, page)
+            if (forceRefresh) forcedRefreshPages += page
             return response(request, page)
         }
 
-        override suspend fun cachedArticles(request: NewsRequest): List<Article> =
-            cached[request].orEmpty()
+        override suspend fun prefetchPage(
+            request: NewsRequest,
+            page: Int,
+        ): DataResult<Unit> {
+            prefetches += LoadCall(request, page)
+            return prefetchResponse(request, page)
+        }
+
+        override suspend fun cachedPage(
+            request: NewsRequest,
+            page: Int,
+        ): NewsPage? =
+            cached[request]?.takeIf { page == 1 }?.let { NewsPage(articles = it, totalResults = 60) }
 
         override suspend fun getSources(request: SourcesRequest): DataResult<List<NewsSource>> =
             error("Not expected")

@@ -9,7 +9,10 @@ sealed interface HomePartial : UiPartial {
 
     data class FirstPageLoading(val clearContent: Boolean) : HomePartial
 
-    data class CacheLoaded(val articles: List<Article>) : HomePartial
+    data class CacheLoaded(
+        val articles: List<Article>,
+        val totalResults: Int,
+    ) : HomePartial
 
     data class FirstPageSuccess(
         val articles: List<Article>,

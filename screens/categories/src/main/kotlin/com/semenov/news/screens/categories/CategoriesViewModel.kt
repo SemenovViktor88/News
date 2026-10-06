@@ -26,6 +26,7 @@ class CategoriesViewModel @Inject constructor(
     ) {
     private var requestJob: Job? = null
     private var loadMoreJob: Job? = null
+    private var prefetchJob: Job? = null
 
     override suspend fun processInit() {
         startFirstPage(currentState.selectedCategory, clearContent = true)
@@ -60,6 +61,7 @@ class CategoriesViewModel @Inject constructor(
         val request = category.toRequest()
         requestJob?.cancel()
         loadMoreJob?.cancel()
+        prefetchJob?.cancel()
         requestJob =
             launch {
                 loadFirstPage(request, clearContent)
@@ -71,12 +73,17 @@ class CategoriesViewModel @Inject constructor(
         clearContent: Boolean,
     ) {
         sendPartial(CategoriesPartial.FirstPageLoading(clearContent))
-        val cachedArticles = repository.cachedArticles(request)
-        if (cachedArticles.isNotEmpty()) {
-            sendPartial(CategoriesPartial.CacheLoaded(cachedArticles))
+        val cachedFirstPage = repository.cachedPage(request, FIRST_PAGE)
+        if (cachedFirstPage != null && cachedFirstPage.articles.isNotEmpty()) {
+            sendPartial(
+                CategoriesPartial.CacheLoaded(
+                    articles = cachedFirstPage.articles,
+                    totalResults = cachedFirstPage.totalResults,
+                ),
+            )
         }
 
-        when (val result = repository.loadPage(request, FIRST_PAGE)) {
+        when (val result = repository.loadPage(request, FIRST_PAGE, forceRefresh = true)) {
             is DataResult.Success -> {
                 sendPartial(
                     CategoriesPartial.FirstPageSuccess(
@@ -84,10 +91,23 @@ class CategoriesViewModel @Inject constructor(
                         totalResults = result.data.totalResults,
                     ),
                 )
+                prefetchNextPage(request)
             }
 
             is DataResult.Failure -> sendPartial(CategoriesPartial.FirstPageFailure(result.error))
         }
+    }
+
+    /** Keeps the database one page ahead of what is shown, so the next load more is served from it. */
+    private fun prefetchNextPage(request: NewsRequest) {
+        val state = currentState
+        if (!state.hasMore) return
+        val page = state.currentPage + 1
+        prefetchJob?.cancel()
+        prefetchJob =
+            launch {
+                repository.prefetchPage(request, page)
+            }
     }
 
     private fun startLoadMore(isRetry: Boolean) {
@@ -118,8 +138,10 @@ class CategoriesViewModel @Inject constructor(
                 val page = latestState.currentPage + 1
                 val request = latestState.selectedCategory.toRequest()
                 sendPartial(CategoriesPartial.LoadMoreStarted)
+                // Let an in-flight prefetch finish so the page is read from the database, not requested twice.
+                prefetchJob?.join()
                 when (val result = repository.loadPage(request, page)) {
-                    is DataResult.Success ->
+                    is DataResult.Success -> {
                         sendPartial(
                             CategoriesPartial.LoadMoreSuccess(
                                 page = page,
@@ -127,6 +149,8 @@ class CategoriesViewModel @Inject constructor(
                                 totalResults = result.data.totalResults,
                             ),
                         )
+                        prefetchNextPage(request)
+                    }
 
                     is DataResult.Failure -> sendPartial(CategoriesPartial.LoadMoreFailure(result.error))
                 }

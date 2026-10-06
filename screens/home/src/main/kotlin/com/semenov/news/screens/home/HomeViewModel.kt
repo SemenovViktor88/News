@@ -27,6 +27,7 @@ class HomeViewModel @Inject constructor(
     ) {
     private var requestJob: Job? = null
     private var loadMoreJob: Job? = null
+    private var prefetchJob: Job? = null
 
     override suspend fun processInit() {
         startFirstPage(NewsRequest.Feed, clearContent = true)
@@ -53,6 +54,7 @@ class HomeViewModel @Inject constructor(
         if (query == currentState.query) return
         requestJob?.cancel()
         loadMoreJob?.cancel()
+        prefetchJob?.cancel()
         sendPartial(HomePartial.QueryChanged(query))
         requestJob =
             launch {
@@ -67,6 +69,7 @@ class HomeViewModel @Inject constructor(
     ) {
         requestJob?.cancel()
         loadMoreJob?.cancel()
+        prefetchJob?.cancel()
         requestJob =
             launch {
                 loadFirstPage(request, clearContent)
@@ -78,12 +81,17 @@ class HomeViewModel @Inject constructor(
         clearContent: Boolean,
     ) {
         sendPartial(HomePartial.FirstPageLoading(clearContent))
-        val cachedArticles = repository.cachedArticles(request)
-        if (cachedArticles.isNotEmpty()) {
-            sendPartial(HomePartial.CacheLoaded(cachedArticles))
+        val cachedFirstPage = repository.cachedPage(request, FIRST_PAGE)
+        if (cachedFirstPage != null && cachedFirstPage.articles.isNotEmpty()) {
+            sendPartial(
+                HomePartial.CacheLoaded(
+                    articles = cachedFirstPage.articles,
+                    totalResults = cachedFirstPage.totalResults,
+                ),
+            )
         }
 
-        when (val result = repository.loadPage(request, FIRST_PAGE)) {
+        when (val result = repository.loadPage(request, FIRST_PAGE, forceRefresh = true)) {
             is DataResult.Success -> {
                 sendPartial(
                     HomePartial.FirstPageSuccess(
@@ -91,10 +99,23 @@ class HomeViewModel @Inject constructor(
                         totalResults = result.data.totalResults,
                     ),
                 )
+                prefetchNextPage(request)
             }
 
             is DataResult.Failure -> sendPartial(HomePartial.FirstPageFailure(result.error))
         }
+    }
+
+    /** Keeps the database one page ahead of what is shown, so the next load more is served from it. */
+    private fun prefetchNextPage(request: NewsRequest) {
+        val state = currentState
+        if (!state.hasMore) return
+        val page = state.currentPage + 1
+        prefetchJob?.cancel()
+        prefetchJob =
+            launch {
+                repository.prefetchPage(request, page)
+            }
     }
 
     private fun startLoadMore(isRetry: Boolean) {
@@ -125,8 +146,10 @@ class HomeViewModel @Inject constructor(
                 val page = latestState.currentPage + 1
                 val request = currentRequest()
                 sendPartial(HomePartial.LoadMoreStarted)
+                // Let an in-flight prefetch finish so the page is read from the database, not requested twice.
+                prefetchJob?.join()
                 when (val result = repository.loadPage(request, page)) {
-                    is DataResult.Success ->
+                    is DataResult.Success -> {
                         sendPartial(
                             HomePartial.LoadMoreSuccess(
                                 page = page,
@@ -134,6 +157,8 @@ class HomeViewModel @Inject constructor(
                                 totalResults = result.data.totalResults,
                             ),
                         )
+                        prefetchNextPage(request)
+                    }
 
                     is DataResult.Failure -> sendPartial(HomePartial.LoadMoreFailure(result.error))
                 }

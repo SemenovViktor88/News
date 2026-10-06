@@ -52,7 +52,9 @@ class CategoriesReducer @Inject constructor() : Reducer<CategoriesState, Categor
                 old.copy(
                     isLoading = false,
                     isSwitchingCategory = true,
-                    articles = partial.articles,
+                    articles = partial.articles.distinctByArticleIdentity(),
+                    hasMore = hasMore(partial.articles, FIRST_PAGE, partial.totalResults),
+                    currentPage = FIRST_PAGE,
                     hasLoaded = true,
                     error = null,
                 )

@@ -46,9 +46,11 @@ class HomeReducer @Inject constructor() : Reducer<HomeState, HomePartial> {
 
             is HomePartial.CacheLoaded ->
                 old.copy(
-                    articles = partial.articles,
+                    articles = partial.articles.distinctByArticleIdentity(),
                     isLoading = false,
                     isSearching = true,
+                    hasMore = hasMore(partial.articles, FIRST_PAGE, partial.totalResults),
+                    currentPage = FIRST_PAGE,
                     hasLoaded = true,
                     error = null,
                 )

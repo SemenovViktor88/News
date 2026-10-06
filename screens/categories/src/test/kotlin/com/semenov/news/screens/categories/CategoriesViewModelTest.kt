@@ -55,6 +55,10 @@ class CategoriesViewModelTest {
             LoadCall(NewsRequest.Category("general"), 1),
             repository.calls.single(),
         )
+        assertEquals(
+            LoadCall(NewsRequest.Category("general"), 2),
+            repository.prefetches.single(),
+        )
         assertEquals(NewsCategory.GENERAL, state.value.selectedCategory)
         assertEquals(20, state.value.articles.size)
         assertEquals(1, state.value.currentPage)
@@ -231,17 +235,30 @@ class CategoriesViewModelTest {
         private val response: suspend (NewsRequest, Int) -> DataResult<NewsPage>,
     ) : NewsRepository {
         val calls = mutableListOf<LoadCall>()
+        val prefetches = mutableListOf<LoadCall>()
 
         override suspend fun loadPage(
             request: NewsRequest,
             page: Int,
+            forceRefresh: Boolean,
         ): DataResult<NewsPage> {
             calls += LoadCall(request, page)
             return response(request, page)
         }
 
-        override suspend fun cachedArticles(request: NewsRequest): List<Article> =
-            cached[request].orEmpty()
+        override suspend fun prefetchPage(
+            request: NewsRequest,
+            page: Int,
+        ): DataResult<Unit> {
+            prefetches += LoadCall(request, page)
+            return DataResult.Success(Unit)
+        }
+
+        override suspend fun cachedPage(
+            request: NewsRequest,
+            page: Int,
+        ): NewsPage? =
+            cached[request]?.takeIf { page == 1 }?.let { NewsPage(articles = it, totalResults = 60) }
 
         override suspend fun getSources(request: SourcesRequest): DataResult<List<NewsSource>> =
             error("Not expected")

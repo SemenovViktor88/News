@@ -10,7 +10,10 @@ sealed interface CategoriesPartial : UiPartial {
 
     data class FirstPageLoading(val clearContent: Boolean) : CategoriesPartial
 
-    data class CacheLoaded(val articles: List<Article>) : CategoriesPartial
+    data class CacheLoaded(
+        val articles: List<Article>,
+        val totalResults: Int,
+    ) : CategoriesPartial
 
     data class FirstPageSuccess(
         val articles: List<Article>,
