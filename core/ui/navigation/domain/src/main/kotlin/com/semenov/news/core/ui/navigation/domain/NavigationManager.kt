@@ -8,4 +8,6 @@ interface NavigationManager {
     fun navigate(destination: AppDestination)
 
     fun goBack()
+
+    fun reset()
 }

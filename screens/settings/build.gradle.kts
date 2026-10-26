@@ -28,6 +28,7 @@ dependencies {
     implementation(project(":core:ui:mvi:presentation"))
     implementation(project(":core:ui:designsystem"))
     implementation(project(":core:ui:interactions:domain"))
+    implementation(project(":features:auth:domain"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

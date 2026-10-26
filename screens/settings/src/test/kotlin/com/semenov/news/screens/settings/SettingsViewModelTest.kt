@@ -6,9 +6,12 @@ import com.semenov.news.core.domain.settings.AppSettings
 import com.semenov.news.core.domain.settings.AppSettingsStore
 import com.semenov.news.core.ui.interactions.domain.model.AppHapticEffect
 import com.semenov.news.core.ui.interactions.domain.manager.HapticEffectManager
+import com.semenov.news.features.auth.domain.model.AuthUser
+import com.semenov.news.features.auth.domain.session.SessionManager
 import com.semenov.news.screens.settings.model.SettingsIntent
 import com.semenov.news.screens.settings.reducer.SettingsReducer
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -189,14 +192,82 @@ class SettingsViewModelTest {
         assertEquals(listOf("haptics:false", "haptics:true"), store.writes)
     }
 
+    @Test
+    fun `saved user is available immediately and external changes are observed`() = runTest(dispatcher) {
+        val session = FakeSessionManager(AuthUser("віктор"))
+        val viewModel = createViewModel(FakeSettingsStore(), session = session)
+        assertEquals("віктор", viewModel.state.value.userName)
+        advanceUntilIdle()
+
+        session.saveUser(AuthUser("Anna"))
+        advanceUntilIdle()
+
+        assertEquals("Anna", viewModel.state.value.userName)
+    }
+
+    @Test
+    fun `logout delegates cleanup once and prevents preference writes while waiting`() = runTest(dispatcher) {
+        val store = FakeSettingsStore()
+        val completion = CompletableDeferred<Unit>()
+        val session = FakeSessionManager(onLogout = { completion.await() })
+        val haptics = FakeHapticEffectManager()
+        val viewModel = createViewModel(store, haptics, session)
+        viewModel.state
+        advanceUntilIdle()
+
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.isLoggingOut)
+        viewModel.processIntent(SettingsIntent.DarkThemeChanged(true))
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        assertTrue(store.writes.isEmpty())
+
+        completion.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, session.logoutCalls)
+        assertNull(session.user.value)
+        assertTrue(store.writes.isEmpty())
+        assertEquals(listOf(AppHapticEffect.Click), haptics.performed)
+        assertFalse(viewModel.state.value.isLoggingOut)
+    }
+
+    @Test
+    fun `failed cleanup keeps the account visible and permits retry`() = runTest(dispatcher) {
+        var shouldFail = true
+        val session = FakeSessionManager(onLogout = { if (shouldFail) error("Disk unavailable") })
+        val viewModel = createViewModel(FakeSettingsStore(), session = session)
+        viewModel.state
+        advanceUntilIdle()
+
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.state.value.logoutError)
+        assertFalse(viewModel.state.value.isLoggingOut)
+        assertEquals("Alex", viewModel.state.value.userName)
+        assertEquals(AuthUser("Alex"), session.user.value)
+
+        shouldFail = false
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.logoutError)
+        assertNull(session.user.value)
+        assertEquals(2, session.logoutCalls)
+    }
+
     private fun createViewModel(
         store: AppSettingsStore,
         haptics: HapticEffectManager = FakeHapticEffectManager(),
+        session: SessionManager = FakeSessionManager(),
     ) =
         SettingsViewModel(
             settingsStore = store,
             settingsReducer = SettingsReducer(),
             hapticEffectManager = haptics,
+            sessionManager = session,
             logger = NoOpLogger,
         ).also(viewModels::add)
 
@@ -235,8 +306,31 @@ class SettingsViewModelTest {
             values.update { it.copy(hapticsEnabled = enabled) }
         }
 
+        override suspend fun clear() {
+            values.value = AppSettings()
+        }
+
         fun replace(settings: AppSettings) {
             values.value = settings
+        }
+    }
+
+    private class FakeSessionManager(
+        initial: AuthUser? = AuthUser("Alex"),
+        private val onLogout: suspend () -> Unit = {},
+    ) : SessionManager {
+        private val currentUser = MutableStateFlow(initial)
+        override val user = currentUser.asStateFlow()
+        var logoutCalls = 0
+
+        override suspend fun saveUser(user: AuthUser) {
+            currentUser.value = user
+        }
+
+        override suspend fun logout() {
+            logoutCalls++
+            onLogout()
+            currentUser.value = null
         }
     }
 

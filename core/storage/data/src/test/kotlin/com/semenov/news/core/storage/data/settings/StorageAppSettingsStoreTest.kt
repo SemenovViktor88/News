@@ -115,6 +115,38 @@ class StorageAppSettingsStoreTest {
         assertEquals(store.read(), StorageAppSettingsStore(storage).read())
     }
 
+    @Test
+    fun `clear removes every stored value and publishes defaults`() = runTest {
+        val storage = FakeStorage().apply { putBlocking("unrelated", "saved user") }
+        val store = StorageAppSettingsStore(storage)
+        store.setDarkTheme(true)
+        store.setHapticsEnabled(false)
+
+        store.clear()
+
+        assertEquals(AppSettings(), store.settings.value)
+        assertEquals(AppSettings(), StorageAppSettingsStore(storage).read())
+        assertEquals("missing", storage.getBlocking("unrelated", "missing"))
+    }
+
+    @Test
+    fun `clear waits for a pending preference write so it cannot survive logout`() = runTest {
+        val storage = FakeStorage()
+        val writeReady = CompletableDeferred<Unit>()
+        storage.beforePut = { writeReady.await() }
+        val store = StorageAppSettingsStore(storage)
+        val write = launch { store.setDarkTheme(true) }
+        runCurrent()
+        val clear = launch { store.clear() }
+        runCurrent()
+
+        writeReady.complete(Unit)
+        joinAll(write, clear)
+
+        assertEquals(AppSettings(), store.read())
+        assertEquals(AppSettings(), StorageAppSettingsStore(storage).read())
+    }
+
     private class FakeStorage : Storage {
         private val json = Json
         private val values = mutableMapOf<String, String>()

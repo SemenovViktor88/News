@@ -1,6 +1,7 @@
 package com.semenov.news.main.components
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
@@ -24,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.semenov.news.R
 import com.semenov.news.core.ui.mvi.presentation.BaseScreen
 import com.semenov.news.core.ui.navigation.domain.AppDestination
+import com.semenov.news.core.ui.navigation.domain.AppFlow
 import com.semenov.news.core.ui.navigation.presentation.NavigationManagerImpl
 import com.semenov.news.core.ui.navigation.presentation.NewsNavigationHost
 import com.semenov.news.main.MainViewModel
@@ -45,21 +47,25 @@ fun MainContainer(
             modifier = Modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
-                MainBottomBar(
-                    activeDestination = state.activeDestination,
-                    onDestinationSelected = {
-                        viewModel.processIntent(MainIntent.DestinationSelected(it))
-                    },
-                )
+                if (state.flow == AppFlow.Regular) {
+                    MainBottomBar(
+                        activeDestination = state.activeDestination,
+                        onDestinationSelected = {
+                            viewModel.processIntent(MainIntent.DestinationSelected(it))
+                        },
+                    )
+                }
             },
         ) { contentPadding ->
             NewsNavigationHost(
                 navigationManager = navigationManager,
                 activeDestination = state.activeDestination,
+                flow = state.flow,
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(contentPadding),
+                        .padding(contentPadding)
+                        .consumeWindowInsets(contentPadding),
             )
         }
     }

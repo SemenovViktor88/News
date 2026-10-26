@@ -174,5 +174,9 @@ class HapticEffectManagerImplTest {
         override suspend fun setHapticsEnabled(enabled: Boolean) {
             mutableSettings.value = read().copy(hapticsEnabled = enabled)
         }
+
+        override suspend fun clear() {
+            mutableSettings.value = AppSettings()
+        }
     }
 }

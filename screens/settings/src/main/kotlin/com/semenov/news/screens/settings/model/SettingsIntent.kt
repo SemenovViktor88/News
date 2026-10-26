@@ -8,4 +8,6 @@ sealed interface SettingsIntent : UiIntent {
     data class LampPulled(val darkTheme: Boolean) : SettingsIntent
 
     data class HapticsChanged(val enabled: Boolean) : SettingsIntent
+
+    data object LogoutClicked : SettingsIntent
 }

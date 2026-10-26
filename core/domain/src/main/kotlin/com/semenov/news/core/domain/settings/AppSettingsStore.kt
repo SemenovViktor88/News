@@ -15,4 +15,7 @@ interface AppSettingsStore {
     suspend fun setDarkTheme(enabled: Boolean)
 
     suspend fun setHapticsEnabled(enabled: Boolean)
+
+    /** Clears persisted app data and publishes the default settings after completion. */
+    suspend fun clear()
 }

@@ -7,6 +7,22 @@ import org.junit.Test
 
 class NavigationManagerImplTest {
     @Test
+    fun `reset discards all previous user back stacks`() {
+        val manager = NavigationManagerImpl()
+        manager.homeBackStack.add(NavigationKey.Home)
+        manager.categoriesBackStack.add(NavigationKey.Categories)
+        manager.settingsBackStack.add(NavigationKey.Settings)
+        manager.navigate(AppDestination.Settings)
+
+        manager.reset()
+
+        assertEquals(AppDestination.Home, manager.activeDestination.value)
+        assertEquals(listOf(NavigationKey.Home), manager.homeBackStack)
+        assertEquals(listOf(NavigationKey.Categories), manager.categoriesBackStack)
+        assertEquals(listOf(NavigationKey.Settings), manager.settingsBackStack)
+    }
+
+    @Test
     fun `home is the active start flow and each flow has its own root back stack`() {
         val manager = NavigationManagerImpl()
 

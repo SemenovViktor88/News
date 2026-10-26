@@ -14,6 +14,8 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.semenov.news.main.MainActivity
@@ -21,6 +23,7 @@ import com.semenov.news.core.ui.designsystem.theme.newsPalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -28,6 +31,33 @@ import org.junit.runner.RunWith
 class SettingsNavigationTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
+
+    @Before
+    fun signInIfNeeded() {
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("auth_username"))
+                .fetchSemanticsNodes().isNotEmpty() ||
+                composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("navigation_settings"))
+                    .fetchSemanticsNodes().isNotEmpty()
+        }
+        if (composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("auth_username"))
+                .fetchSemanticsNodes().isNotEmpty()
+        ) {
+            composeRule.onNodeWithTag("auth_username").performTextInput("Settings test")
+            composeRule.onNodeWithTag("auth_password").performTextInput("news")
+            composeRule.onNodeWithTag("auth_sign_in").performScrollTo().performClick()
+            composeRule.waitUntil(timeoutMillis = 10_000) {
+                composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("auth_code"))
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+            composeRule.onNodeWithTag("auth_code").performTextInput("1111")
+            composeRule.onNodeWithTag("auth_verify").performScrollTo().performClick()
+            composeRule.waitUntil(timeoutMillis = 10_000) {
+                composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("navigation_settings"))
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+    }
 
     @Test
     fun settingsRemainSelectedAcrossNavigationAndActivityRecreation() {

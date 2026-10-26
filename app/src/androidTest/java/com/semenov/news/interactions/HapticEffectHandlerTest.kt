@@ -18,6 +18,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.semenov.news.core.domain.settings.AppSettings
 import com.semenov.news.core.domain.settings.AppSettingsStore
+import com.semenov.news.features.auth.domain.model.AuthUser
+import com.semenov.news.features.auth.domain.session.SessionManager
 import com.semenov.news.core.domain.AppLogger
 import com.semenov.news.core.ui.interactions.data.manager.HapticEffectManagerImpl
 import com.semenov.news.core.ui.interactions.domain.model.AppHapticEffect
@@ -171,6 +173,11 @@ class HapticEffectHandlerTest {
                 settingsStore = it,
                 settingsReducer = SettingsReducer(),
                 hapticEffectManager = manager,
+                sessionManager = object : SessionManager {
+                    override val user = MutableStateFlow<AuthUser?>(AuthUser("Test"))
+                    override suspend fun saveUser(user: AuthUser) { this.user.value = user }
+                    override suspend fun logout() { user.value = null }
+                },
                 logger = object : AppLogger {
                     override fun log(tag: String, message: String, t: Throwable?) = Unit
                 },
@@ -204,6 +211,10 @@ class HapticEffectHandlerTest {
 
         override suspend fun setHapticsEnabled(enabled: Boolean) {
             values.update { it.copy(hapticsEnabled = enabled) }
+        }
+
+        override suspend fun clear() {
+            values.value = AppSettings()
         }
     }
 

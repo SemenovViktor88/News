@@ -16,6 +16,7 @@ states.
 - Skeleton, empty, offline, initial-error, and inline-error states
 - Bottom navigation with independent Home, Categories, and Settings back stacks
 - Persistent dark-theme and haptic-feedback preferences with an interactive pull-cord lamp
+- Two-step demo sign-in, persisted user sessions, and logout that clears preferences and cached articles
 - Support for `/v2/top-headlines`, `/v2/everything`, and
   `/v2/top-headlines/sources`
 
@@ -84,10 +85,25 @@ the current context. Network failures do not remove previously cached content.
 
 ### Navigation
 
-`MainContainer` is the root Compose screen and contains the Home, Categories, and Settings
+`MainContainer` selects between `authFlow` and `regularFlow` from the persisted
+user session. Only `regularFlow` contains the Home, Categories, and Settings
 bottom-navigation destinations. Navigation is implemented with Navigation 3.
 Each destination owns a separate `NavBackStack`, `ViewModelStore`, and saved
-state, so switching tabs preserves its navigation and UI state.
+state, so switching tabs preserves its navigation and UI state. Leaving a flow
+removes its entries and screen ViewModels; logout also resets all tab stacks.
+
+### Demo authentication
+
+Enter any nonblank username of up to 32 Unicode characters, the password
+`news`, and then the four-digit code `1111`. This is a local mock: no email is
+sent. The app stores only the verified user's name in DataStore after the code
+succeeds; passwords and codes stay in memory and are redacted from MVI logs.
+Subsequent launches restore the user and enter the regular flow directly.
+
+Settings displays the user's name and uppercase initial. Logout clears the
+entire DataStore and every Room table, restores default preferences, and returns
+to sign-in. A cache generation guard prevents pending news requests from
+writing data from the previous session after cleanup.
 
 ## Module structure
 
@@ -119,6 +135,9 @@ core
     └── navigation — destinations, manager, and Navigation 3 host
 
 features
+├── auth
+│   ├── domain — user, challenge, authentication and session contracts
+│   └── data — mock authentication, DataStore session, and logout cleanup
 └── news
     ├── domain
     │   ├── NewsRepository
@@ -131,9 +150,10 @@ features
         └── Hilt bindings
 
 screens
+├── auth — sign-in and verification, following BaseScreen / MVI conventions
 ├── home — latest headlines, search, and pagination
 ├── categories — category selection and paginated articles
-└── settings — dark theme, haptic feedback, and animated pull-cord lamp
+└── settings — user identity, logout, dark theme, haptic feedback, and animated pull-cord lamp
 ```
 
 All three tabs use the same `NewsTheme` in `core:ui:designsystem`. Its light

@@ -3,6 +3,9 @@ package com.semenov.news.main
 import com.semenov.news.core.domain.AppLogger
 import com.semenov.news.core.ui.navigation.domain.AppDestination
 import com.semenov.news.core.ui.navigation.domain.NavigationManager
+import com.semenov.news.core.ui.navigation.domain.AppFlow
+import com.semenov.news.features.auth.domain.model.AuthUser
+import com.semenov.news.features.auth.domain.session.SessionManager
 import com.semenov.news.main.models.MainIntent
 import com.semenov.news.main.reducer.MainReducer
 import com.semenov.news.core.domain.settings.AppSettings
@@ -18,6 +21,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -120,14 +124,59 @@ class MainViewModelTest {
         assertEquals(false, recreatedViewModel.state.value.darkTheme)
     }
 
+    @Test
+    fun `missing user starts auth and ignores bottom navigation intents`() = runTest(dispatcher) {
+        val navigationManager = FakeNavigationManager()
+        val viewModel = createViewModel(navigationManager, sessionManager = FakeSessionManager(null))
+        val state = viewModel.state
+        runCurrent()
+
+        viewModel.processIntent(MainIntent.DestinationSelected(AppDestination.Settings))
+        runCurrent()
+
+        assertEquals(AppFlow.Auth, state.value.flow)
+        assertEquals(AppDestination.Home, navigationManager.activeDestination.value)
+    }
+
+    @Test
+    fun `saved user starts regular flow before initialization`() = runTest(dispatcher) {
+        val viewModel = createViewModel(FakeNavigationManager())
+
+        assertEquals(AppFlow.Regular, viewModel.state.value.flow)
+    }
+
+    @Test
+    fun `logout resets navigation and next login starts home`() = runTest(dispatcher) {
+        val navigationManager = FakeNavigationManager()
+        val session = FakeSessionManager(AuthUser("Viktor"))
+        val viewModel = createViewModel(navigationManager, sessionManager = session)
+        val state = viewModel.state
+        runCurrent()
+        viewModel.processIntent(MainIntent.DestinationSelected(AppDestination.Settings))
+        runCurrent()
+
+        session.logout()
+        runCurrent()
+        assertNull(session.user.value)
+        assertEquals(AppFlow.Auth, state.value.flow)
+        assertEquals(AppDestination.Home, state.value.activeDestination)
+
+        session.saveUser(AuthUser("Anna"))
+        runCurrent()
+        assertEquals(AppFlow.Regular, state.value.flow)
+        assertEquals(AppDestination.Home, state.value.activeDestination)
+    }
+
     private fun createViewModel(
         navigationManager: NavigationManager,
         settingsStore: AppSettingsStore = FakeAppSettingsStore(),
+        sessionManager: SessionManager = FakeSessionManager(AuthUser("Viktor")),
     ) =
         MainViewModel(
             navigationManager = navigationManager,
             reducer = MainReducer(),
             settingsStore = settingsStore,
+            sessionManager = sessionManager,
             logger = NoOpLogger,
         )
 
@@ -146,6 +195,16 @@ class MainViewModelTest {
         override suspend fun setHapticsEnabled(enabled: Boolean) {
             current.value = current.value.copy(hapticsEnabled = enabled)
         }
+
+        override suspend fun clear() {
+            current.value = AppSettings()
+        }
+    }
+
+    private class FakeSessionManager(initial: AuthUser?) : SessionManager {
+        override val user = MutableStateFlow(initial)
+        override suspend fun saveUser(user: AuthUser) { this.user.value = user }
+        override suspend fun logout() { user.value = null }
     }
 
     private class FakeNavigationManager : NavigationManager {
@@ -157,6 +216,10 @@ class MainViewModelTest {
         }
 
         override fun goBack() {
+            destination.value = AppDestination.Home
+        }
+
+        override fun reset() {
             destination.value = AppDestination.Home
         }
     }

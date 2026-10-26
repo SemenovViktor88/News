@@ -26,9 +26,11 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.hilt.android)
     ksp(libs.room.compiler)
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

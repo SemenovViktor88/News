@@ -31,6 +31,16 @@ class NavigationManagerImpl @Inject constructor() : NavigationManager {
         }
     }
 
+    override fun reset() {
+        homeBackStack.clear()
+        homeBackStack.add(NavigationKey.Home)
+        categoriesBackStack.clear()
+        categoriesBackStack.add(NavigationKey.Categories)
+        settingsBackStack.clear()
+        settingsBackStack.add(NavigationKey.Settings)
+        _activeDestination.value = AppDestination.Home
+    }
+
     internal fun backStackFor(destination: AppDestination): NavBackStack<NavigationKey> =
         when (destination) {
             AppDestination.Home -> homeBackStack

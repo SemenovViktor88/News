@@ -43,6 +43,13 @@ class StorageAppSettingsStore @Inject constructor(
         }
     }
 
+    override suspend fun clear() {
+        writes.withLock {
+            storage.deleteAll()
+            currentSettings.value = AppSettings()
+        }
+    }
+
     private companion object {
         const val DARK_THEME = "dark_theme"
         const val HAPTICS_ENABLED = "haptics_enabled"
