@@ -10,6 +10,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.semenov.news.core.ui.navigation.domain.AppDestination
 import com.semenov.news.screens.categories.CategoriesScreen
 import com.semenov.news.screens.home.HomeScreen
+import com.semenov.news.screens.settings.SettingsScreen
 
 @Composable
 fun NewsNavigationHost(
@@ -21,6 +22,7 @@ fun NewsNavigationHost(
         entryProvider {
             entry<NavigationKey.Home> { HomeScreen() }
             entry<NavigationKey.Categories> { CategoriesScreen() }
+            entry<NavigationKey.Settings> { SettingsScreen() }
         }
     val homeEntries =
         rememberDecoratedNavEntries(
@@ -42,10 +44,21 @@ fun NewsNavigationHost(
                 ),
             entryProvider = entryProvider,
         )
+    val settingsEntries =
+        rememberDecoratedNavEntries(
+            backStack = navigationManager.settingsBackStack,
+            entryDecorators =
+                listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
+            entryProvider = entryProvider,
+        )
     val activeEntries =
         when (activeDestination) {
             AppDestination.Home -> homeEntries
             AppDestination.Categories -> homeEntries + categoriesEntries
+            AppDestination.Settings -> homeEntries + settingsEntries
         }
 
     NavDisplay(

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="categories_title">Categories</string>
+    <string name="categories_subtitle">Follow what sparks your curiosity.</string>
     <string name="categories_empty_message">No news found for this category</string>
     <string name="categories_error_message">Something went wrong</string>
     <string name="categories_offline_message">No internet connection</string>

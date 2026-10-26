@@ -14,7 +14,8 @@ states.
 - Local cache separated by feed, search query, and category
 - Cached content displayed before a network refresh
 - Skeleton, empty, offline, initial-error, and inline-error states
-- Bottom navigation with independent Home and Categories back stacks
+- Bottom navigation with independent Home, Categories, and Settings back stacks
+- Persistent dark-theme and haptic-feedback preferences with an interactive pull-cord lamp
 - Support for `/v2/top-headlines`, `/v2/everything`, and
   `/v2/top-headlines/sources`
 
@@ -83,7 +84,7 @@ the current context. Network failures do not remove previously cached content.
 
 ### Navigation
 
-`MainContainer` is the root Compose screen and contains the Home and Categories
+`MainContainer` is the root Compose screen and contains the Home, Categories, and Settings
 bottom-navigation destinations. Navigation is implemented with Navigation 3.
 Each destination owns a separate `NavBackStack`, `ViewModelStore`, and saved
 state, so switching tabs preserves its navigation and UI state.
@@ -94,7 +95,7 @@ state, so switching tabs preserves its navigation and UI state.
 app
 ├── Application, Hilt composition root, and AppLogger binding
 ├── MainActivity / MainContainer / MainViewModel
-└── application theme and configuration
+└── application configuration
 
 core
 ├── domain
@@ -108,9 +109,13 @@ core
 ├── network
 │   ├── domain — API contract
 │   └── data — Ktor client, logging, and network error mapping
+├── storage
+│   ├── domain — generic Storage contract and serializer extensions
+│   └── data — DataStore, settings adapter, and Hilt bindings
 └── ui
-    ├── designsystem — shared Compose components and dimensions
+    ├── designsystem — shared light/dark theme, colors, typography, shapes, and components
     ├── mvi — MVI contracts, MviViewModel, and BaseScreen
+    ├── interactions — haptic effects contract, shared manager, and lifecycle-aware Compose handler
     └── navigation — destinations, manager, and Navigation 3 host
 
 features
@@ -127,8 +132,20 @@ features
 
 screens
 ├── home — latest headlines, search, and pagination
-└── categories — category selection and paginated articles
+├── categories — category selection and paginated articles
+└── settings — dark theme, haptic feedback, and animated pull-cord lamp
 ```
+
+All three tabs use the same `NewsTheme` in `core:ui:designsystem`. Its light
+ivory/green and dark navy/gold palettes also define lamp materials and lighting;
+screens do not define their own colors. Settings follows the same `BaseScreen`,
+`MviViewModel`, `model`, and `reducer` structure as Home and Categories.
+`SettingsViewModel` writes preferences through the shared `AppSettingsStore`
+domain contract. Its observable state keeps the app theme synchronized and is
+persisted by `core:storage:data`. Storage supports JSON-serialized values with
+blocking and suspend access. Serialization lets the generic API store primitive
+values, collections, and custom objects. Existing SharedPreferences settings
+migrate to DataStore on first use.
 
 ## Main technology stack
 

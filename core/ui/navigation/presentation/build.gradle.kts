@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":core:ui:navigation:domain"))
     implementation(project(":screens:home"))
     implementation(project(":screens:categories"))
+    implementation(project(":screens:settings"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.navigation3.runtime)

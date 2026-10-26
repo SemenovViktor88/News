@@ -1,8 +1,9 @@
 package com.semenov.news.screens.categories
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,8 +15,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,7 +29,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.semenov.news.core.domain.model.NetworkError
@@ -35,6 +38,7 @@ import com.semenov.news.core.ui.designsystem.component.NewsArticleCard
 import com.semenov.news.core.ui.designsystem.component.NewsEmptyState
 import com.semenov.news.core.ui.designsystem.component.NewsErrorState
 import com.semenov.news.core.ui.designsystem.component.NewsInlineError
+import com.semenov.news.core.ui.designsystem.component.NewsScreenHeader
 import com.semenov.news.core.ui.designsystem.theme.NewsSpacing
 import com.semenov.news.core.ui.mvi.presentation.BaseScreen
 import com.semenov.news.screens.categories.components.CategoriesSkeleton
@@ -83,7 +87,8 @@ internal fun CategoriesContent(
         Column(
             modifier =
                 Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             CategoriesHeader(
                 selectedCategory = state.selectedCategory,
@@ -114,24 +119,15 @@ private fun CategoriesHeader(
     onCategorySelected: (NewsCategory) -> Unit,
 ) {
     Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = NewsSpacing.medium),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = stringResource(R.string.categories_title),
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = NewsSpacing.medium),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
+        NewsScreenHeader(
+            title = stringResource(R.string.categories_title),
+            subtitle = stringResource(R.string.categories_subtitle),
         )
-        Spacer(modifier = Modifier.height(NewsSpacing.medium))
+        Spacer(modifier = Modifier.height(NewsSpacing.large))
         LazyRow(
-            contentPadding = PaddingValues(horizontal = NewsSpacing.medium),
+            contentPadding = PaddingValues(horizontal = NewsSpacing.large),
             horizontalArrangement = Arrangement.spacedBy(NewsSpacing.small),
         ) {
             items(
@@ -141,7 +137,22 @@ private fun CategoriesHeader(
                 FilterChip(
                     selected = category == selectedCategory,
                     onClick = { onCategorySelected(category) },
-                    label = { Text(category.label()) },
+                    label = {
+                        Text(
+                            text = category.label(),
+                            modifier = Modifier.padding(horizontal = NewsSpacing.small, vertical = NewsSpacing.extraSmall),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    },
+                    shape = RoundedCornerShape(18.dp),
+                    border = null,
+                    colors =
+                        FilterChipDefaults.filterChipColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
                 )
             }
         }
@@ -149,6 +160,7 @@ private fun CategoriesHeader(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = NewsSpacing.large)
                     .height(NewsSpacing.extraSmall),
             contentAlignment = Alignment.Center,
         ) {
@@ -191,11 +203,12 @@ private fun CategoryArticles(
         state = listState,
         contentPadding =
             PaddingValues(
-                start = NewsSpacing.medium,
-                top = NewsSpacing.small,
-                end = NewsSpacing.medium,
+                start = NewsSpacing.large,
+                top = NewsSpacing.medium,
+                end = NewsSpacing.large,
                 bottom = NewsSpacing.large,
             ),
+        verticalArrangement = Arrangement.spacedBy(NewsSpacing.medium),
     ) {
         itemsIndexed(
             items = state.articles,

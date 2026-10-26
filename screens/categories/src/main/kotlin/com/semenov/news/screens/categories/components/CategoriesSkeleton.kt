@@ -1,5 +1,7 @@
 package com.semenov.news.screens.categories.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -19,32 +23,36 @@ import com.semenov.news.core.ui.designsystem.theme.NewsSpacing
 @Composable
 internal fun CategoriesSkeleton() {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         contentPadding =
             PaddingValues(
-                start = NewsSpacing.medium,
-                top = NewsSpacing.large,
-                end = NewsSpacing.medium,
+                start = NewsSpacing.large,
+                top = 32.dp,
+                end = NewsSpacing.large,
                 bottom = NewsSpacing.large,
             ),
         userScrollEnabled = false,
+        verticalArrangement = Arrangement.spacedBy(NewsSpacing.medium),
     ) {
         item(key = "categories-header-skeleton") {
             Column(modifier = Modifier.fillMaxWidth()) {
                 ShimmerBlock(
                     modifier =
                         Modifier
-                            .width(180.dp)
-                            .height(40.dp),
+                            .width(210.dp)
+                            .height(42.dp),
                 )
-                Spacer(modifier = Modifier.height(NewsSpacing.medium))
+                Spacer(modifier = Modifier.height(7.dp))
+                ShimmerBlock(modifier = Modifier.height(20.dp).fillMaxWidth(.85f))
+                Spacer(modifier = Modifier.height(NewsSpacing.large))
                 Row {
                     repeat(CATEGORY_SKELETON_COUNT) { index ->
                         ShimmerBlock(
                             modifier =
                                 Modifier
                                     .width(if (index == 0) 96.dp else 112.dp)
-                                    .height(40.dp),
+                                    .height(44.dp),
+                            shape = RoundedCornerShape(18.dp),
                         )
                         Spacer(modifier = Modifier.width(NewsSpacing.small))
                     }

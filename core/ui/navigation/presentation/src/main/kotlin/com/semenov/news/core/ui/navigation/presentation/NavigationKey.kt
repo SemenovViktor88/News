@@ -9,4 +9,7 @@ internal sealed interface NavigationKey : NavKey {
 
     @Serializable
     data object Categories : NavigationKey
+
+    @Serializable
+    data object Settings : NavigationKey
 }

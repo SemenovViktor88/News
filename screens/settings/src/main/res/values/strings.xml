@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Make it yours.</string>
+    <string name="settings_app_name">News</string>
+    <string name="settings_app_subtitle">Your daily perspective</string>
+    <string name="settings_app_initial">N</string>
+    <string name="settings_preferences">PREFERENCES</string>
+    <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_dark_theme_description">A softer glow after dark</string>
+    <string name="settings_haptics">Haptic feedback</string>
+    <string name="settings_haptics_description">Feel a gentle touch with every interaction</string>
+    <string name="settings_lamp_description">Pull the cord to change theme</string>
+    <string name="settings_lamp_toggle_action">Change theme</string>
+    <string name="settings_lamp_on">Light on</string>
+    <string name="settings_lamp_off">Light off</string>
+    <string name="settings_pull_hint">Pull the cord. Set the mood.</string>
+</resources>

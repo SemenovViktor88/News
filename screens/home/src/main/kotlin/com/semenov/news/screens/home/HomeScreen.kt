@@ -1,5 +1,8 @@
 package com.semenov.news.screens.home
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,15 +11,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,10 +31,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.semenov.news.core.domain.model.NetworkError
@@ -36,6 +45,7 @@ import com.semenov.news.core.ui.designsystem.component.NewsArticleCard
 import com.semenov.news.core.ui.designsystem.component.NewsEmptyState
 import com.semenov.news.core.ui.designsystem.component.NewsErrorState
 import com.semenov.news.core.ui.designsystem.component.NewsInlineError
+import com.semenov.news.core.ui.designsystem.component.NewsScreenHeader
 import com.semenov.news.core.ui.designsystem.theme.NewsSpacing
 import com.semenov.news.core.ui.mvi.presentation.BaseScreen
 import com.semenov.news.screens.home.components.HomeSkeleton
@@ -72,7 +82,8 @@ fun HomeScreen(
         Column(
             modifier =
                 Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
         ) {
             HomeHeader(
                 query = state.query,
@@ -105,27 +116,29 @@ private fun HomeHeader(
     onQueryChanged: (String) -> Unit,
 ) {
     Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = NewsSpacing.medium,
-                    top = NewsSpacing.medium,
-                    end = NewsSpacing.medium,
-                ),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = stringResource(R.string.home_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
+        NewsScreenHeader(
+            title = stringResource(R.string.home_title),
+            subtitle = stringResource(R.string.home_subtitle),
         )
-        Spacer(modifier = Modifier.height(NewsSpacing.medium))
+        Spacer(modifier = Modifier.height(NewsSpacing.large))
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChanged,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = NewsSpacing.large),
             placeholder = { Text(stringResource(R.string.home_search_hint)) },
+            leadingIcon = { SearchIcon() },
+            shape = RoundedCornerShape(20.dp),
+            colors =
+                OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surface,
+                    focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
@@ -134,6 +147,7 @@ private fun HomeHeader(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = NewsSpacing.large)
                     .height(NewsSpacing.extraSmall),
             contentAlignment = Alignment.Center,
         ) {
@@ -176,11 +190,12 @@ private fun HomeContent(
         state = listState,
         contentPadding =
             PaddingValues(
-                start = NewsSpacing.medium,
-                top = NewsSpacing.small,
-                end = NewsSpacing.medium,
+                start = NewsSpacing.large,
+                top = NewsSpacing.medium,
+                end = NewsSpacing.large,
                 bottom = NewsSpacing.large,
             ),
+        verticalArrangement = Arrangement.spacedBy(NewsSpacing.medium),
     ) {
         itemsIndexed(
             items = state.articles,
@@ -210,6 +225,27 @@ private fun HomeContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SearchIcon() {
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    Canvas(modifier = Modifier.size(22.dp)) {
+        val unit = size.width / 22f
+        drawCircle(
+            color = color,
+            radius = 6.5f * unit,
+            center = Offset(9f * unit, 9f * unit),
+            style = Stroke(width = 1.8f * unit),
+        )
+        drawLine(
+            color = color,
+            start = Offset(14f * unit, 14f * unit),
+            end = Offset(19f * unit, 19f * unit),
+            strokeWidth = 1.8f * unit,
+            cap = StrokeCap.Round,
+        )
     }
 }
 

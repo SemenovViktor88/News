@@ -13,6 +13,7 @@ class NavigationManagerImplTest {
         assertEquals(AppDestination.Home, manager.activeDestination.value)
         assertEquals(listOf(NavigationKey.Home), manager.homeBackStack)
         assertEquals(listOf(NavigationKey.Categories), manager.categoriesBackStack)
+        assertEquals(listOf(NavigationKey.Settings), manager.settingsBackStack)
     }
 
     @Test
@@ -55,6 +56,24 @@ class NavigationManagerImplTest {
         manager.goBack()
 
         assertEquals(listOf(NavigationKey.Categories), manager.categoriesBackStack)
+        assertEquals(AppDestination.Home, manager.activeDestination.value)
+    }
+
+    @Test
+    fun `settings preserves its stack across tab switches and back returns home`() {
+        val manager = NavigationManagerImpl()
+        val settingsBackStack = manager.settingsBackStack
+        manager.navigate(AppDestination.Settings)
+        manager.settingsBackStack.add(NavigationKey.Settings)
+        manager.navigate(AppDestination.Categories)
+
+        manager.navigate(AppDestination.Settings)
+
+        assertSame(settingsBackStack, manager.activeBackStack)
+        manager.goBack()
+        assertEquals(AppDestination.Settings, manager.activeDestination.value)
+        assertEquals(listOf(NavigationKey.Settings), manager.settingsBackStack)
+        manager.goBack()
         assertEquals(AppDestination.Home, manager.activeDestination.value)
     }
 }

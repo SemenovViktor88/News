@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class NavigationManagerImpl @Inject constructor() : NavigationManager {
     internal val homeBackStack = NavBackStack<NavigationKey>(NavigationKey.Home)
     internal val categoriesBackStack = NavBackStack<NavigationKey>(NavigationKey.Categories)
+    internal val settingsBackStack = NavBackStack<NavigationKey>(NavigationKey.Settings)
 
     private val _activeDestination = MutableStateFlow<AppDestination>(AppDestination.Home)
     override val activeDestination: StateFlow<AppDestination> = _activeDestination.asStateFlow()
@@ -34,6 +35,7 @@ class NavigationManagerImpl @Inject constructor() : NavigationManager {
         when (destination) {
             AppDestination.Home -> homeBackStack
             AppDestination.Categories -> categoriesBackStack
+            AppDestination.Settings -> settingsBackStack
         }
 
     internal val activeBackStack: NavBackStack<NavigationKey>

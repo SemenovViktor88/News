@@ -13,5 +13,7 @@ class MainReducer @Inject constructor() : Reducer<MainState, MainPartial> {
         when (partial) {
             is MainPartial.DestinationChanged ->
                 old.copy(activeDestination = partial.destination)
+            is MainPartial.ThemeChanged ->
+                old.copy(darkTheme = partial.darkTheme)
         }
 }

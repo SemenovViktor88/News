@@ -4,4 +4,6 @@ sealed interface AppDestination {
     data object Home : AppDestination
 
     data object Categories : AppDestination
+
+    data object Settings : AppDestination
 }

@@ -9,6 +9,7 @@ import com.semenov.news.core.ui.navigation.domain.AppDestination
 
 data class MainState(
     val activeDestination: AppDestination = AppDestination.Home,
+    val darkTheme: Boolean? = null,
 ) : UiState {
     override val hasContent: Boolean = true
     override val initialErrorState: ErrorState? = null
@@ -20,6 +21,8 @@ sealed interface MainIntent : UiIntent {
 
 sealed interface MainPartial : UiPartial {
     data class DestinationChanged(val destination: AppDestination) : MainPartial
+
+    data class ThemeChanged(val darkTheme: Boolean?) : MainPartial
 }
 
 sealed interface MainEffect : UiEffect

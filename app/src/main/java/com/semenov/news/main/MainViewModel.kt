@@ -1,6 +1,7 @@
 package com.semenov.news.main
 
 import com.semenov.news.core.domain.AppLogger
+import com.semenov.news.core.domain.settings.AppSettingsStore
 import com.semenov.news.core.ui.mvi.presentation.MviViewModel
 import com.semenov.news.core.ui.navigation.domain.NavigationManager
 import com.semenov.news.main.models.MainEffect
@@ -15,14 +16,24 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val navigationManager: NavigationManager,
     private val reducer: MainReducer,
+    private val settingsStore: AppSettingsStore,
     logger: AppLogger,
 ) : MviViewModel<MainState, MainPartial, MainIntent, MainEffect>(
-        initialState = MainState(),
+        initialState = settingsStore.read().let { settings ->
+            MainState(
+                darkTheme = settings.darkTheme,
+            )
+        },
         logger = logger,
     ) {
     override suspend fun processInit() {
-        navigationManager.activeDestination.collect { destination ->
-            sendPartial(MainPartial.DestinationChanged(destination))
+        launch {
+            navigationManager.activeDestination.collect { destination ->
+                sendPartial(MainPartial.DestinationChanged(destination))
+            }
+        }
+        settingsStore.settings.collect { settings ->
+            sendPartial(MainPartial.ThemeChanged(settings.darkTheme))
         }
     }
 

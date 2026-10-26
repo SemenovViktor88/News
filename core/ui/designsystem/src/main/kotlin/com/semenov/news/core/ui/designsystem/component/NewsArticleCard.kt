@@ -1,6 +1,7 @@
 package com.semenov.news.core.ui.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,8 +12,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,7 +28,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import coil3.compose.AsyncImage
 import com.semenov.news.core.domain.model.Article
 import com.semenov.news.core.ui.designsystem.theme.NewsSizes
@@ -59,20 +60,30 @@ fun NewsArticleCard(
     imageUrl: String?,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(25.dp),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = NewsSizes.articleImageHeight)
-                    .padding(vertical = NewsSpacing.small),
+                    .padding(18.dp),
         ) {
-            ArticleImage(
-                imageUrl = imageUrl,
-                contentDescription = title,
-            )
-            Spacer(modifier = Modifier.width(NewsSpacing.medium))
             Column(modifier = Modifier.weight(1f)) {
+                if (!metadata.isNullOrBlank()) {
+                    Text(
+                        text = metadata,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(NewsSpacing.small))
+                }
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
@@ -82,44 +93,34 @@ fun NewsArticleCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (!description.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(NewsSpacing.extraSmall))
+                    Spacer(modifier = Modifier.height(NewsSpacing.small))
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (!metadata.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(NewsSpacing.small))
-                    Text(
-                        text = metadata,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
+            Spacer(modifier = Modifier.width(NewsSpacing.medium))
+            ArticleImage(imageUrl = imageUrl)
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
     }
 }
 
 @Composable
 private fun ArticleImage(
     imageUrl: String?,
-    contentDescription: String,
 ) {
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RoundedCornerShape(16.dp)
     var loadFailed by remember(imageUrl) { mutableStateOf(false) }
     Box(
         modifier =
             Modifier
                 .size(
-                    width = NewsSizes.articleImageWidth,
-                    height = NewsSizes.articleImageHeight,
+                    width = 88.dp,
+                    height = 112.dp,
                 ).clip(shape)
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
@@ -127,11 +128,25 @@ private fun ArticleImage(
         if (!imageUrl.isNullOrBlank() && !loadFailed) {
             AsyncImage(
                 model = imageUrl,
-                contentDescription = contentDescription,
+                contentDescription = null,
                 modifier = Modifier.matchParentSize(),
                 contentScale = ContentScale.Crop,
                 onError = { loadFailed = true },
             )
+        } else {
+            // A quiet placeholder keeps the card balanced for missing or failed images.
+            Column(
+                modifier = Modifier.padding(NewsSpacing.medium),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                repeat(3) { index ->
+                    Box(
+                        modifier =
+                            Modifier.fillMaxWidth(if (index == 2) .65f else 1f).height(3.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp)),
+                    )
+                }
+            }
         }
     }
 }
@@ -140,49 +155,37 @@ private fun ArticleImage(
 fun NewsArticleSkeleton(
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .heightIn(min = NewsSizes.articleImageHeight)
-                .padding(vertical = NewsSpacing.small),
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(25.dp),
+        color = MaterialTheme.colorScheme.surface,
     ) {
-        ShimmerBlock(
-            modifier =
-                Modifier.size(
-                    width = NewsSizes.articleImageWidth,
-                    height = NewsSizes.articleImageHeight,
-                ),
-            shape = RoundedCornerShape(6.dp),
-        )
-        Spacer(modifier = Modifier.width(NewsSpacing.medium))
-        Column(modifier = Modifier.weight(1f)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
+                ShimmerBlock(
+                    modifier = Modifier.fillMaxWidth(0.55f).height(NewsSizes.skeletonTextHeight),
+                )
+                Spacer(modifier = Modifier.height(NewsSpacing.small))
+                ShimmerBlock(
+                    modifier = Modifier.fillMaxWidth().height(NewsSizes.skeletonTitleHeight),
+                )
+                Spacer(modifier = Modifier.height(NewsSpacing.extraSmall))
+                ShimmerBlock(
+                    modifier = Modifier.fillMaxWidth(0.88f).height(NewsSizes.skeletonTitleHeight),
+                )
+                Spacer(modifier = Modifier.height(NewsSpacing.medium))
+                ShimmerBlock(
+                    modifier = Modifier.fillMaxWidth().height(NewsSizes.skeletonTextHeight),
+                )
+                Spacer(modifier = Modifier.height(NewsSpacing.extraSmall))
+                ShimmerBlock(
+                    modifier = Modifier.fillMaxWidth(0.68f).height(NewsSizes.skeletonTextHeight),
+                )
+            }
+            Spacer(modifier = Modifier.width(NewsSpacing.medium))
             ShimmerBlock(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(NewsSizes.skeletonTitleHeight),
-            )
-            Spacer(modifier = Modifier.height(NewsSpacing.small))
-            ShimmerBlock(
-                modifier =
-                    Modifier
-                        .fillMaxWidth(0.88f)
-                        .height(NewsSizes.skeletonTextHeight),
-            )
-            Spacer(modifier = Modifier.height(NewsSpacing.extraSmall))
-            ShimmerBlock(
-                modifier =
-                    Modifier
-                        .fillMaxWidth(0.68f)
-                        .height(NewsSizes.skeletonTextHeight),
-            )
-            Spacer(modifier = Modifier.height(NewsSpacing.medium))
-            ShimmerBlock(
-                modifier =
-                    Modifier
-                        .fillMaxWidth(0.42f)
-                        .height(NewsSizes.skeletonTextHeight),
+                modifier = Modifier.size(width = 88.dp, height = 112.dp),
+                shape = RoundedCornerShape(16.dp),
             )
         }
     }

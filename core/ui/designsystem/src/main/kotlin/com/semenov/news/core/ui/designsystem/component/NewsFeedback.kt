@@ -3,18 +3,19 @@ package com.semenov.news.core.ui.designsystem.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.semenov.news.core.ui.designsystem.theme.NewsSpacing
 
 @Composable
@@ -26,12 +27,15 @@ fun NewsEmptyState(
         modifier = modifier.fillMaxSize().padding(NewsSpacing.large),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        Surface(shape = RoundedCornerShape(25.dp), color = MaterialTheme.colorScheme.surface) {
+            Text(
+                text = message,
+                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -42,19 +46,26 @@ fun NewsErrorState(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Box(
         modifier = modifier.fillMaxSize().padding(NewsSpacing.large),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(NewsSpacing.medium))
-        Button(onClick = onRetry) {
-            Text(retryLabel)
+        Surface(shape = RoundedCornerShape(25.dp), color = MaterialTheme.colorScheme.surface) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(NewsSpacing.medium),
+            ) {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Button(onClick = onRetry, shape = RoundedCornerShape(16.dp)) {
+                    Text(retryLabel, style = MaterialTheme.typography.labelLarge)
+                }
+            }
         }
     }
 }
@@ -66,24 +77,31 @@ fun NewsInlineError(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Surface(
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(
-                    horizontal = NewsSpacing.medium,
+                    horizontal = NewsSpacing.large,
                     vertical = NewsSpacing.small,
                 ),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        shape = RoundedCornerShape(25.dp),
+        color = MaterialTheme.colorScheme.errorContainer,
     ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center,
-        )
-        Button(onClick = onRetry) {
-            Text(retryLabel)
+        Column(
+            modifier = Modifier.padding(NewsSpacing.medium),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(NewsSpacing.small),
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                textAlign = TextAlign.Center,
+            )
+            Button(onClick = onRetry, shape = RoundedCornerShape(16.dp)) {
+                Text(retryLabel, style = MaterialTheme.typography.labelLarge)
+            }
         }
     }
 }
