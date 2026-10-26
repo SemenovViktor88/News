@@ -147,6 +147,11 @@ blocking and suspend access. Serialization lets the generic API store primitive
 values, collections, and custom objects. Existing SharedPreferences settings
 migrate to DataStore on first use.
 
+The launcher icon and native Android splash screen use the shared forest,
+ivory, and gold palette. The splash fades into the app as soon as its first
+frame is ready. The editable icon is `design/news-app-icon.svg`; regenerate
+all legacy density variants on macOS with `swift design/export-launcher-icons.swift`.
+
 ## Main technology stack
 
 | Area | Technology |

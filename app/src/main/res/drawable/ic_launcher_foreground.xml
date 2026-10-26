@@ -5,44 +5,19 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Folded rear page. -->
+    <!-- All visible artwork fits inside the adaptive icon's central safe circle. -->
     <path
-        android:fillColor="#252052"
-        android:pathData="M31,34H27C21.5,34 18,37.5 18,43V72C18,80.5 24.5,87 33,87H76V78H33C29.5,78 27,75.5 27,72V43H31Z" />
+        android:fillColor="@color/news_brand_gold"
+        android:pathData="M34,36H40V74C40,77.314 37.314,80 34,80C30.686,80 28,77.314 28,74V42C28,38.686 30.686,36 34,36Z" />
     <path
-        android:fillColor="#FFF9ED"
-        android:pathData="M27,39H31V77H33C35,77 36.5,75.5 36.5,73.5V39H40V74C40,80 36,83 31.5,83C26.5,83 23,79 23,73V43C23,40.5 24.5,39 27,39Z" />
+        android:fillColor="@color/news_brand_ivory"
+        android:pathData="M41,28H70C73.866,28 77,31.134 77,35V73C77,76.866 73.866,80 70,80H41C37.134,80 34,76.866 34,73V35C34,31.134 37.134,28 41,28Z" />
 
-    <!-- Front newspaper page. -->
+    <!-- The N stays bold at launcher sizes; the broad rule hints at a newspaper. -->
     <path
-        android:fillColor="#FFF9ED"
-        android:pathData="M38,21H78C85.5,21 90,25.5 90,33V76C90,83.5 85.5,88 78,88H38C30.5,88 27,83.5 27,76V33C27,25.5 30.5,21 38,21Z" />
-
-    <!-- Lead image and headline rows. -->
+        android:fillColor="@color/news_brand_green"
+        android:pathData="M42,38H47.5L62,55.5V38H68V64H62.5L48,46.5V64H42Z" />
     <path
-        android:fillColor="#FF4D57"
-        android:pathData="M50,40A9,9 0,1 1,32 40A9,9 0,1 1,50 40Z" />
-    <path
-        android:fillColor="#312E81"
-        android:pathData="M58,32H78A2.5,2.5 0,0 1,78 37H58A2.5,2.5 0,0 1,58 32Z" />
-    <path
-        android:fillColor="#312E81"
-        android:pathData="M58,40H78A2.5,2.5 0,0 1,78 45H58A2.5,2.5 0,0 1,58 40Z" />
-    <path
-        android:fillColor="#312E81"
-        android:pathData="M58,48H73A2.5,2.5 0,0 1,73 53H58A2.5,2.5 0,0 1,58 48Z" />
-
-    <!-- Lower story image and copy. -->
-    <path
-        android:fillColor="#312E81"
-        android:pathData="M34,60A3,3 0,0 1,37 57H52A3,3 0,0 1,55 60V75A3,3 0,0 1,52 78H37A3,3 0,0 1,34 75Z" />
-    <path
-        android:fillColor="#312E81"
-        android:pathData="M62,59H80A2,2 0,0 1,80 63H62A2,2 0,0 1,62 59Z" />
-    <path
-        android:fillColor="#312E81"
-        android:pathData="M62,66H80A2,2 0,0 1,80 70H62A2,2 0,0 1,62 66Z" />
-    <path
-        android:fillColor="#312E81"
-        android:pathData="M62,73H76A2,2 0,0 1,76 77H62A2,2 0,0 1,62 73Z" />
+        android:fillColor="@color/news_brand_gold"
+        android:pathData="M43.5,70H66.5A1.5,1.5 0,0 1,66.5 73H43.5A1.5,1.5 0,0 1,43.5 70Z" />
 </vector>

@@ -4,27 +4,9 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Cutouts preserve the N and reading rule when Android supplies a single tint. -->
     <path
-        android:fillColor="#00000000"
-        android:pathData="M37,24H78C84,24 87,27 87,33V76C87,82 84,85 78,85H36C29,85 25,81 25,74V40H31"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="5" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M31,34V74C31,79 28,82 25,82C21,82 19,79 19,74V43C19,37 22,34 27,34H31Z"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="4" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M50,40A9,9 0,1 1,32 40A9,9 0,1 1,50 40Z" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M58,34H78M58,42H78M58,50H73M35,60H79M35,68H79M35,76H72"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="4" />
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M41,28H70C73.866,28 77,31.134 77,35V73C77,76.866 73.866,80 70,80H34C30.686,80 28,77.314 28,74V42C28,38.686 30.686,36 34,36V35C34,31.134 37.134,28 41,28Z M42,38H47.5L62,55.5V38H68V64H62.5L48,46.5V64H42Z M43.5,70H66.5A1.5,1.5 0,0 1,66.5 73H43.5A1.5,1.5 0,0 1,43.5 70Z M31,43A1.5,1.5 0,0 1,34 43V72A1.5,1.5 0,0 1,31 72Z" />
 </vector>

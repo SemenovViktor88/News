@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Native launcher and starting-window resources use the app's shared palette. -->
+    <color name="news_brand_green">#31574A</color>
+    <color name="news_brand_gold">#E3C780</color>
+    <color name="news_brand_ivory">#F3F2EB</color>
+    <color name="news_brand_ink">#23352B</color>
+    <color name="news_brand_navy">#10191F</color>
+    <color name="news_window_background">@color/news_brand_ivory</color>
+</resources>

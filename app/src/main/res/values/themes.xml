@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Theme.News" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/news_window_background</item>
+        <item name="android:colorAccent">@color/news_brand_green</item>
+    </style>
 
-    <style name="Theme.News" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.News.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/news_brand_navy</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/news_brand_green</item>
+        <item name="postSplashScreenTheme">@style/Theme.News</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:statusBarColor">@color/news_brand_navy</item>
+        <item name="android:navigationBarColor">@color/news_brand_navy</item>
+    </style>
 </resources>

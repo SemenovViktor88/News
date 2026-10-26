@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.SideEffect
 import androidx.core.view.WindowCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.semenov.news.core.ui.navigation.presentation.NavigationManagerImpl
 import com.semenov.news.main.components.MainContainer
@@ -29,7 +30,15 @@ class MainActivity : ComponentActivity() {
     lateinit var hapticEffectManager: HapticEffectManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        splashScreen.setOnExitAnimationListener { splash ->
+            splash.view.animate()
+                .alpha(0f)
+                .setDuration(180L)
+                .withEndAction(splash::remove)
+                .start()
+        }
         enableEdgeToEdge()
         setContent {
             val state by mainViewModel.state.collectAsStateWithLifecycle()
