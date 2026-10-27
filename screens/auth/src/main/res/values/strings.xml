@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_app_name">News</string>
+    <string name="auth_tagline">Your daily perspective</string>
+    <string name="auth_step_login">STEP 1 OF 2 · SIGN IN</string>
+    <string name="auth_step_code">STEP 2 OF 2 · VERIFICATION</string>
+    <string name="auth_welcome">Welcome back.</string>
+    <string name="auth_verify_title">One more step.</string>
+    <string name="auth_login_description">A little perspective starts here. Sign in to make it yours.</string>
+    <string name="auth_code_description">Hi, %1$s. Enter the four-digit verification code to continue.</string>
+    <string name="auth_user_name">Username</string>
+    <string name="auth_name_length">%1$d / 32 characters</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_show_password">Show</string>
+    <string name="auth_hide_password">Hide</string>
+    <string name="auth_code_label">4-digit code</string>
+    <string name="auth_continue">Continue</string>
+    <string name="auth_verify_button">Verify and sign in</string>
+    <string name="auth_change_user">Use a different username</string>
+    <string name="auth_demo_title">DEMO MODE</string>
+    <string name="auth_demo_login">Choose any username up to 32 characters. The demo password is news. A new verification code arrives in your notifications each time you sign in.</string>
+    <string name="auth_error_user_name">Enter a username with 1–32 characters.</string>
+    <string name="auth_error_credentials">That password doesn’t match. Try again.</string>
+    <string name="auth_error_code">That code doesn’t match. Enter the four-digit code again.</string>
+    <string name="auth_error_unavailable">Couldn’t complete sign-in. Please try again.</string>
+    <string name="auth_error_notifications">Allow News notifications to receive your sign-in code. Enable notifications and the Sign-in codes channel, then continue again.</string>
+    <string name="auth_notification_settings">Open notification settings</string>
+</resources>

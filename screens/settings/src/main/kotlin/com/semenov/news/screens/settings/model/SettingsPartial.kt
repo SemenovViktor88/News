@@ -7,4 +7,12 @@ sealed interface SettingsPartial : UiPartial {
         val darkTheme: Boolean?,
         val hapticsEnabled: Boolean,
     ) : SettingsPartial
+
+    data class UserChanged(val name: String) : SettingsPartial
+
+    data object LogoutStarted : SettingsPartial
+
+    data object LogoutFinished : SettingsPartial
+
+    data object LogoutFailed : SettingsPartial
 }

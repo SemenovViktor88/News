@@ -5,6 +5,9 @@ import kotlinx.serialization.Serializable
 
 internal sealed interface NavigationKey : NavKey {
     @Serializable
+    data object Auth : NavigationKey
+
+    @Serializable
     data object Home : NavigationKey
 
     @Serializable

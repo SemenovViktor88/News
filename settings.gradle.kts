@@ -43,8 +43,11 @@ include(":core:ui:designsystem")
 
 include(":features:news:domain")
 include(":features:news:data")
+include(":features:auth:domain")
+include(":features:auth:data")
 
 include(":screens:home")
 include(":screens:categories")
 include(":screens:settings")
+include(":screens:auth")
 include(":core:logging")

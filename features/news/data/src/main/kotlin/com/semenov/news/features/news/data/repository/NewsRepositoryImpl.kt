@@ -1,5 +1,6 @@
 package com.semenov.news.features.news.data.repository
 
+import com.semenov.news.core.db.NewsCacheCoordinator
 import com.semenov.news.core.domain.AppLogger
 import com.semenov.news.core.domain.model.DataResult
 import com.semenov.news.core.domain.model.NetworkError
@@ -26,6 +27,7 @@ class NewsRepositoryImpl @Inject constructor(
     private val remoteDataSourse: NewsRemoteDataSourse,
     private val localDataSourse: NewsLocalDataSourse,
     private val logger: AppLogger,
+    private val cacheCoordinator: NewsCacheCoordinator,
 ) : NewsRepository {
     private val inFlightMutex = Mutex()
     private val inFlightPages = mutableMapOf<PageKey, CompletableDeferred<DataResult<NewsPage>>>()
@@ -36,14 +38,15 @@ class NewsRepositoryImpl @Inject constructor(
         forceRefresh: Boolean,
     ): DataResult<NewsPage> {
         require(page > 0) { "Page must be greater than zero" }
+        val generation = cacheCoordinator.currentGeneration() ?: return sessionEnded()
         if (!forceRefresh) {
             cachedPage(request, page)?.let { return DataResult.Success(it) }
         }
-        return fetchPageOnce(request, page) {
+        return fetchPageOnce(request, page, generation) {
             if (!forceRefresh) {
                 cachedPage(request, page)?.let { return@fetchPageOnce DataResult.Success(it) }
             }
-            fetchAndCache(request, page)
+            fetchAndCache(request, page, generation)
         }
     }
 
@@ -52,11 +55,12 @@ class NewsRepositoryImpl @Inject constructor(
         page: Int,
     ): DataResult<Unit> {
         require(page > 0) { "Page must be greater than zero" }
+        val generation = cacheCoordinator.currentGeneration() ?: return sessionEnded()
         if (cachedPage(request, page) != null) return DataResult.Success(Unit)
         val result =
-            fetchPageOnce(request, page) {
+            fetchPageOnce(request, page, generation) {
                 cachedPage(request, page)?.let { return@fetchPageOnce DataResult.Success(it) }
-                fetchAndCache(request, page)
+                fetchAndCache(request, page, generation)
             }
         return when (result) {
             is DataResult.Success -> DataResult.Success(Unit)
@@ -69,7 +73,10 @@ class NewsRepositoryImpl @Inject constructor(
         page: Int,
     ): NewsPage? =
         try {
-            localDataSourse.page(request, page)
+            val generation = cacheCoordinator.currentGeneration()
+            if (generation == null) null else cacheCoordinator.withSession(generation) {
+                localDataSourse.page(request, page)
+            }
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (throwable: Throwable) {
@@ -83,6 +90,7 @@ class NewsRepositoryImpl @Inject constructor(
     private suspend fun fetchAndCache(
         request: NewsRequest,
         page: Int,
+        generation: Long,
     ): DataResult<NewsPage> {
         val remoteResult =
             when (request) {
@@ -129,7 +137,7 @@ class NewsRepositoryImpl @Inject constructor(
                 remoteResult
             }
         return when (result) {
-            is DataResult.Success -> storeAndReadPage(request, page, result.data)
+            is DataResult.Success -> storeAndReadPage(request, page, result.data, generation)
             is DataResult.Failure -> result
         }
     }
@@ -138,17 +146,20 @@ class NewsRepositoryImpl @Inject constructor(
         request: NewsRequest,
         page: Int,
         newsPage: NewsPage,
+        generation: Long,
     ): DataResult<NewsPage> =
         try {
-            localDataSourse.storePage(request, page, newsPage)
-            val storedPage = localDataSourse.page(request, page)
-            if (storedPage == null) {
-                DataResult.Failure(
-                    NetworkError.Unknown("Page $page was not found after it was cached"),
-                )
-            } else {
-                DataResult.Success(storedPage)
-            }
+            cacheCoordinator.withSession(generation) {
+                localDataSourse.storePage(request, page, newsPage)
+                val storedPage = localDataSourse.page(request, page)
+                if (storedPage == null) {
+                    DataResult.Failure(
+                        NetworkError.Unknown("Page $page was not found after it was cached"),
+                    )
+                } else {
+                    DataResult.Success(storedPage)
+                }
+            } ?: sessionEnded()
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (throwable: Throwable) {
@@ -162,9 +173,10 @@ class NewsRepositoryImpl @Inject constructor(
     private suspend fun fetchPageOnce(
         request: NewsRequest,
         page: Int,
+        generation: Long,
         fetch: suspend () -> DataResult<NewsPage>,
     ): DataResult<NewsPage> {
-        val key = PageKey(request.contextKey(), page)
+        val key = PageKey(request.contextKey(), page, generation)
         val (deferred, isOwner) =
             inFlightMutex.withLock {
                 val existing = inFlightPages[key]
@@ -202,7 +214,11 @@ class NewsRepositoryImpl @Inject constructor(
     private data class PageKey(
         val contextKey: String,
         val page: Int,
+        val generation: Long,
     )
+
+    private fun sessionEnded(): DataResult.Failure =
+        DataResult.Failure(NetworkError.Unknown("Session has ended"))
 
     private companion object {
         const val TAG = "NewsRepository"

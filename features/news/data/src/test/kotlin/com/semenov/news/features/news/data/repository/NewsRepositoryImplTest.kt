@@ -1,5 +1,6 @@
 package com.semenov.news.features.news.data.repository
 
+import com.semenov.news.core.db.NewsCacheCoordinator
 import com.semenov.news.core.domain.AppLogger
 import com.semenov.news.core.domain.model.Article
 import com.semenov.news.core.domain.model.DataResult
@@ -219,10 +220,43 @@ class NewsRepositoryImplTest {
         )
     }
 
+    @Test
+    fun `network response started before logout cannot restore the cleared cache`() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val releaseResponse = CompletableDeferred<Unit>()
+        val local = FakeLocalDataSource()
+        val coordinator = NewsCacheCoordinator().apply { startSession() }
+        val remote = BlockingRemoteDataSource(requestStarted, releaseResponse, success(article("Old user")))
+        val repository = repository(remote, local, coordinator)
+
+        val pending = async { repository.loadPage(NewsRequest.Feed, 1, forceRefresh = true) }
+        requestStarted.await()
+        coordinator.clearForLogout { local.clear() }
+        coordinator.startSession()
+        releaseResponse.complete(Unit)
+
+        assertTrue(pending.await() is DataResult.Failure)
+        assertTrue(local.storeCalls.isEmpty())
+        assertNull(repository.cachedPage(NewsRequest.Feed, 1))
+    }
+
+    @Test
+    fun `unauthenticated requests cannot read cached pages or call the api`() = runTest {
+        val local = FakeLocalDataSource().apply { seed(NewsRequest.Feed, 1, listOf(article("Old"))) }
+        val remote = FakeRemoteDataSource()
+        val repository = repository(remote, local, NewsCacheCoordinator())
+
+        assertNull(repository.cachedPage(NewsRequest.Feed, 1))
+        assertTrue(repository.loadPage(NewsRequest.Feed, 1) is DataResult.Failure)
+        assertTrue(repository.prefetchPage(NewsRequest.Feed, 2) is DataResult.Failure)
+        assertEquals(0, remote.calls)
+    }
+
     private fun repository(
         remote: NewsRemoteDataSourse,
         local: NewsLocalDataSourse,
-    ) = NewsRepositoryImpl(remote, local, NoOpLogger)
+        coordinator: NewsCacheCoordinator = NewsCacheCoordinator().apply { startSession() },
+    ) = NewsRepositoryImpl(remote, local, NoOpLogger, coordinator)
 
     /** Mirrors NewsLocalDataSourseImpl: pages are keyed by context, page 1 replaces the context. */
     private class FakeLocalDataSource(
@@ -254,6 +288,10 @@ class NewsRepositoryImplTest {
             articles: List<Article>,
         ) {
             pages.getOrPut(request.contextKey(), ::mutableMapOf)[page] = NewsPage(articles, 40)
+        }
+
+        fun clear() {
+            pages.clear()
         }
     }
 

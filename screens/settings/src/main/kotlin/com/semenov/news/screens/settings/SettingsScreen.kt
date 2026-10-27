@@ -37,6 +37,10 @@ internal fun SettingsContent(
             onDarkThemeChange = { onIntent(SettingsIntent.DarkThemeChanged(it)) },
             onHapticsChange = { onIntent(SettingsIntent.HapticsChanged(it)) },
             onLampToggle = { onIntent(SettingsIntent.LampPulled(it)) },
+            userName = state.userName,
+            isLoggingOut = state.isLoggingOut,
+            logoutError = state.logoutError,
+            onLogout = { onIntent(SettingsIntent.LogoutClicked) },
         )
     }
 }

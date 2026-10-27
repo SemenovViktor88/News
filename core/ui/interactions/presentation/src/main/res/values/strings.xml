@@ -1,0 +1,18 @@
+<resources>
+    <string name="dialog_logout_title">Are you sure you want to log out?</string>
+    <string name="dialog_logout_message">Your saved settings and cached news will be cleared from this device.</string>
+    <string name="dialog_yes">Yes</string>
+    <string name="dialog_no">No</string>
+    <string name="modal_close">Close verification</string>
+    <string name="modal_verification_title">Let’s verify it’s you</string>
+    <string name="modal_verification_subtitle">%1$s, enter the 4-digit code from your notifications.\nWe’ll check it automatically.</string>
+    <string name="modal_verification_code_label">4-digit verification code</string>
+    <string name="modal_verification_invalid_code">That code isn’t right. Try again.</string>
+    <string name="modal_verification_unavailable">Couldn’t verify the code. Please try again.</string>
+    <string name="modal_verification_checking">Checking your code…</string>
+    <string name="modal_verification_resend">Didn’t get a code? Resend</string>
+    <string name="modal_verification_resent">A new code was sent to your notifications.</string>
+    <string name="modal_verification_demo">Your code is valid for 5 minutes. Resending replaces the previous code.</string>
+    <string name="modal_verification_success_title">Verified successfully</string>
+    <string name="modal_verification_success_description">Code verified</string>
+</resources>

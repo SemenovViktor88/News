@@ -1,6 +1,7 @@
 package com.semenov.news.main
 
 import com.semenov.news.core.ui.navigation.domain.AppDestination
+import com.semenov.news.core.ui.interactions.domain.model.dialog.DialogDestination
 import com.semenov.news.main.models.MainPartial
 import com.semenov.news.main.models.MainState
 import com.semenov.news.main.reducer.MainReducer
@@ -27,5 +28,14 @@ class MainReducerTest {
         val result = reducer.reduce(MainPartial.DestinationChanged(AppDestination.Categories), state)
 
         assertEquals(state.copy(activeDestination = AppDestination.Categories), result)
+    }
+
+    @Test
+    fun `dialog changes preserve current destination and theme`() = runTest {
+        val state = MainState(activeDestination = AppDestination.Settings, darkTheme = true)
+        val dialog = DialogDestination.Logout()
+
+        assertEquals(state.copy(dialog = dialog), reducer.reduce(MainPartial.DialogUpdated(dialog), state))
+        assertEquals(state, reducer.reduce(MainPartial.DialogUpdated(null), state.copy(dialog = dialog)))
     }
 }

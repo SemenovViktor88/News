@@ -20,7 +20,9 @@ android {
 
 dependencies {
     implementation(project(":core:domain"))
+    implementation(project(":core:ui:designsystem"))
     implementation(project(":core:ui:interactions:domain"))
+    implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

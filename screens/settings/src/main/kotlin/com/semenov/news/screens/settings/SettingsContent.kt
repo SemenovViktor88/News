@@ -3,7 +3,6 @@ package com.semenov.news.screens.settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,10 +22,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,22 +37,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.semenov.news.core.ui.designsystem.icon.NewsIcons
 import com.semenov.news.core.ui.designsystem.theme.NewsPalette
 import com.semenov.news.core.ui.designsystem.theme.NewsTheme
 import com.semenov.news.core.ui.designsystem.theme.NewsColors
@@ -59,6 +58,7 @@ import com.semenov.news.core.ui.designsystem.theme.newsPalette
 import com.semenov.news.screens.settings.components.PullCordLamp
 import kotlin.math.hypot
 import kotlin.math.max
+import java.util.Locale
 
 @Composable
 fun SettingsContent(
@@ -68,6 +68,10 @@ fun SettingsContent(
     onHapticsChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     onLampToggle: (Boolean) -> Unit = onDarkThemeChange,
+    userName: String = "",
+    isLoggingOut: Boolean = false,
+    logoutError: Boolean = false,
+    onLogout: () -> Unit = {},
 ) {
     var baseTheme by remember { mutableStateOf(darkTheme) }
     var revealTheme by remember { mutableStateOf(darkTheme) }
@@ -103,7 +107,11 @@ fun SettingsContent(
                 hapticsEnabled = hapticsEnabled,
                 onDarkThemeChange = onDarkThemeChange,
                 onHapticsChange = onHapticsChange,
-                interactive = true,
+                userName = userName,
+                isLoggingOut = isLoggingOut,
+                logoutError = logoutError,
+                onLogout = onLogout,
+                interactive = !isLoggingOut,
                 modifier = Modifier.fillMaxWidth().heightIn(min = viewportHeight),
             )
             if (baseTheme != revealTheme) {
@@ -113,6 +121,10 @@ fun SettingsContent(
                     hapticsEnabled = hapticsEnabled,
                     onDarkThemeChange = {},
                     onHapticsChange = {},
+                    userName = userName,
+                    isLoggingOut = isLoggingOut,
+                    logoutError = logoutError,
+                    onLogout = {},
                     interactive = false,
                     modifier =
                         Modifier
@@ -136,10 +148,11 @@ fun SettingsContent(
             // action stay continuous while the two palette layers are composited.
             PullCordLamp(
                 darkTheme = darkTheme,
-                onToggle = { onLampToggle(!darkTheme) },
+                onToggle = { if (!isLoggingOut) onLampToggle(!darkTheme) },
                 onBulbPositioned = { bulbPosition = it },
                 lightViewportHeight = viewportHeight,
-                modifier = Modifier.fillMaxWidth().height(LampRegionHeight),
+                modifier = Modifier.fillMaxWidth().height(LampRegionHeight)
+                    .then(if (isLoggingOut) Modifier.clearAndSetSemantics {} else Modifier),
             )
         }
     }
@@ -152,6 +165,10 @@ private fun SettingsPage(
     hapticsEnabled: Boolean,
     onDarkThemeChange: (Boolean) -> Unit,
     onHapticsChange: (Boolean) -> Unit,
+    userName: String,
+    isLoggingOut: Boolean,
+    logoutError: Boolean,
+    onLogout: () -> Unit,
     interactive: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -177,7 +194,7 @@ private fun SettingsPage(
             }
         }
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
-            AppIdentity(palette)
+            AppIdentity(palette, userName)
             Spacer(Modifier.height(31.dp))
             Text(
                 text = stringResource(R.string.settings_preferences),
@@ -213,6 +230,28 @@ private fun SettingsPage(
                     moonIcon = false,
                 )
             }
+            Spacer(Modifier.height(16.dp))
+            TextButton(
+                onClick = onLogout,
+                enabled = interactive,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                    .background(palette.card, RoundedCornerShape(20.dp))
+                    .testTag("settings_logout"),
+            ) {
+                Text(
+                    text = stringResource(if (isLoggingOut) R.string.settings_logging_out else R.string.settings_logout),
+                    color = palette.text.copy(alpha = if (isLoggingOut) .55f else 1f),
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            if (logoutError) {
+                Text(
+                    text = stringResource(R.string.settings_logout_error),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 12.dp).testTag("settings_logout_error"),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             Text(
                 text = stringResource(R.string.settings_pull_hint),
                 color = palette.secondaryText.copy(alpha = .8f),
@@ -224,7 +263,7 @@ private fun SettingsPage(
 }
 
 @Composable
-private fun AppIdentity(palette: NewsPalette) {
+private fun AppIdentity(palette: NewsPalette, userName: String) {
     Row(
         modifier =
             Modifier.fillMaxWidth().background(palette.card, RoundedCornerShape(25.dp))
@@ -237,18 +276,22 @@ private fun AppIdentity(palette: NewsPalette) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = stringResource(R.string.settings_app_initial),
+                text = userName.avatarInitial(),
                 color = palette.avatarText,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.testTag("settings_user_initial"),
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
-                text = stringResource(R.string.settings_app_name),
+                text = userName.ifBlank { stringResource(R.string.settings_account) },
                 color = palette.text,
                 fontSize = 19.sp,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.testTag("settings_user_name"),
             )
             Text(
                 text = stringResource(R.string.settings_app_subtitle),
@@ -257,6 +300,11 @@ private fun AppIdentity(palette: NewsPalette) {
             )
         }
     }
+}
+
+internal fun String.avatarInitial(): String {
+    val name = trim()
+    return if (name.isEmpty()) "?" else name.substring(0, name.offsetByCodePoints(0, 1)).uppercase(Locale.ROOT)
 }
 
 @Composable
@@ -269,14 +317,9 @@ private fun PreferenceRow(
     palette: NewsPalette,
     moonIcon: Boolean,
 ) {
-    val rowModifier =
-        if (interactive) {
-            Modifier
-                .testTag(if (moonIcon) "settings_dark_theme" else "settings_haptics")
-                .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-        } else {
-            Modifier
-        }
+    val rowModifier = Modifier
+        .testTag(if (moonIcon) "settings_dark_theme" else "settings_haptics")
+        .toggleable(value = checked, enabled = interactive, role = Role.Switch, onValueChange = onCheckedChange)
     Row(
         modifier =
             Modifier.fillMaxWidth().then(rowModifier).heightIn(min = 96.dp)
@@ -284,7 +327,12 @@ private fun PreferenceRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        PreferenceIcon(moon = moonIcon, palette = palette)
+        Icon(
+            imageVector = if (moonIcon) NewsIcons.DarkTheme else NewsIcons.HapticFeedback,
+            contentDescription = null,
+            modifier = Modifier.size(44.dp).background(palette.iconBackground, CircleShape),
+            tint = palette.accent,
+        )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = title,
@@ -302,6 +350,7 @@ private fun PreferenceRow(
         Switch(
             checked = checked,
             onCheckedChange = null,
+            enabled = interactive,
             colors =
                 SwitchDefaults.colors(
                     checkedThumbColor = palette.checkedThumb,
@@ -312,50 +361,6 @@ private fun PreferenceRow(
                     uncheckedBorderColor = NewsColors.transparent,
                 ),
         )
-    }
-}
-
-@Composable
-private fun PreferenceIcon(moon: Boolean, palette: NewsPalette) {
-    Canvas(modifier = Modifier.size(44.dp).background(palette.iconBackground, CircleShape)) {
-        val center = this.center
-        val unit = size.width / 44f
-        if (moon) {
-            drawCircle(color = palette.accent, radius = 10f * unit, center = center)
-            drawCircle(
-                color = palette.iconBackground,
-                radius = 9f * unit,
-                center = center + Offset(5f * unit, -4f * unit),
-            )
-        } else {
-            drawRoundRect(
-                color = palette.accent,
-                topLeft = Offset(16f * unit, 12f * unit),
-                size = Size(12f * unit, 20f * unit),
-                cornerRadius = CornerRadius(2.5f * unit),
-                style = Stroke(width = 1.8f * unit, cap = StrokeCap.Round),
-            )
-            drawLine(
-                color = palette.accent,
-                start = Offset(20f * unit, 28.5f * unit),
-                end = Offset(24f * unit, 28.5f * unit),
-                strokeWidth = 1.8f * unit,
-                cap = StrokeCap.Round,
-            )
-            val vibration = Path().apply {
-                moveTo(11f * unit, 15f * unit)
-                lineTo(8.5f * unit, 18.5f * unit)
-                lineTo(11f * unit, 22f * unit)
-                lineTo(8.5f * unit, 25.5f * unit)
-                lineTo(11f * unit, 29f * unit)
-                moveTo(33f * unit, 15f * unit)
-                lineTo(35.5f * unit, 18.5f * unit)
-                lineTo(33f * unit, 22f * unit)
-                lineTo(35.5f * unit, 25.5f * unit)
-                lineTo(33f * unit, 29f * unit)
-            }
-            drawPath(vibration, palette.accent, style = Stroke(1.8f * unit, cap = StrokeCap.Round))
-        }
     }
 }
 

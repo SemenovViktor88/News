@@ -16,5 +16,9 @@ class SettingsReducer @Inject constructor() : Reducer<SettingsState, SettingsPar
                     darkTheme = partial.darkTheme,
                     hapticsEnabled = partial.hapticsEnabled,
                 )
+            is SettingsPartial.UserChanged -> old.copy(userName = partial.name)
+            SettingsPartial.LogoutStarted -> old.copy(isLoggingOut = true, logoutError = false)
+            SettingsPartial.LogoutFinished -> old.copy(isLoggingOut = false)
+            SettingsPartial.LogoutFailed -> old.copy(isLoggingOut = false, logoutError = true)
         }
 }

@@ -8,5 +8,6 @@ kotlin {
 }
 
 dependencies {
+    api(libs.androidx.annotation)
     api(libs.kotlinx.coroutines.core)
 }

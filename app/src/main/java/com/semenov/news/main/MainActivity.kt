@@ -15,7 +15,7 @@ import com.semenov.news.core.ui.navigation.presentation.NavigationManagerImpl
 import com.semenov.news.main.components.MainContainer
 import com.semenov.news.core.ui.designsystem.theme.NewsTheme
 import com.semenov.news.core.ui.interactions.domain.manager.HapticEffectManager
-import com.semenov.news.core.ui.interactions.presentation.HapticEffectHandler
+import com.semenov.news.core.ui.interactions.presentation.haptic.HapticEffectHandler
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 

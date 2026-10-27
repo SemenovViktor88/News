@@ -1,9 +1,10 @@
-package com.semenov.news.core.ui.interactions.presentation
+package com.semenov.news.core.ui.interactions.presentation.haptic
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.semenov.news.core.ui.interactions.domain.model.AppHapticEffect
+import com.semenov.news.core.ui.interactions.presentation.extensions.CollectEffect
 import kotlinx.coroutines.flow.Flow
 
 @Composable

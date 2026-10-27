@@ -1,6 +1,5 @@
 package com.semenov.news.screens.home
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -31,9 +31,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -46,6 +43,7 @@ import com.semenov.news.core.ui.designsystem.component.NewsEmptyState
 import com.semenov.news.core.ui.designsystem.component.NewsErrorState
 import com.semenov.news.core.ui.designsystem.component.NewsInlineError
 import com.semenov.news.core.ui.designsystem.component.NewsScreenHeader
+import com.semenov.news.core.ui.designsystem.icon.NewsIcons
 import com.semenov.news.core.ui.designsystem.theme.NewsSpacing
 import com.semenov.news.core.ui.mvi.presentation.BaseScreen
 import com.semenov.news.screens.home.components.HomeSkeleton
@@ -128,7 +126,14 @@ private fun HomeHeader(
             onValueChange = onQueryChanged,
             modifier = Modifier.fillMaxWidth().padding(horizontal = NewsSpacing.large),
             placeholder = { Text(stringResource(R.string.home_search_hint)) },
-            leadingIcon = { SearchIcon() },
+            leadingIcon = {
+                Icon(
+                    imageVector = NewsIcons.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
             shape = RoundedCornerShape(20.dp),
             colors =
                 OutlinedTextFieldDefaults.colors(
@@ -225,27 +230,6 @@ private fun HomeContent(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun SearchIcon() {
-    val color = MaterialTheme.colorScheme.onSurfaceVariant
-    Canvas(modifier = Modifier.size(22.dp)) {
-        val unit = size.width / 22f
-        drawCircle(
-            color = color,
-            radius = 6.5f * unit,
-            center = Offset(9f * unit, 9f * unit),
-            style = Stroke(width = 1.8f * unit),
-        )
-        drawLine(
-            color = color,
-            start = Offset(14f * unit, 14f * unit),
-            end = Offset(19f * unit, 19f * unit),
-            strokeWidth = 1.8f * unit,
-            cap = StrokeCap.Round,
-        )
     }
 }
 

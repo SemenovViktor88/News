@@ -1,4 +1,4 @@
-package com.semenov.news.core.ui.interactions.presentation
+package com.semenov.news.core.ui.interactions.presentation.extensions
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
