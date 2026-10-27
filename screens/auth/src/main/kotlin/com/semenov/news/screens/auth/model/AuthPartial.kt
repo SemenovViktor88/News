@@ -16,6 +16,8 @@ sealed interface AuthPartial : UiPartial {
         override fun toString() = "CodeRequested([redacted])"
     }
     data class Failed(val error: AuthError) : AuthPartial
+    data object Verified : AuthPartial
+    data object CodeResent : AuthPartial
     data object Submitting : AuthPartial
     data object BackToLogin : AuthPartial
     data object Authenticated : AuthPartial

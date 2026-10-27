@@ -7,4 +7,8 @@ interface AuthRepository {
     suspend fun signIn(userName: String, password: String): AuthChallenge
 
     suspend fun verifyCode(challenge: AuthChallenge, code: String): AuthUser
+
+    suspend fun resendCode(challenge: AuthChallenge): AuthChallenge
+
+    suspend fun cancelChallenge(challenge: AuthChallenge)
 }

@@ -10,12 +10,16 @@ import com.semenov.news.core.ui.mvi.domain.model.UiState
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -116,6 +120,17 @@ abstract class MviViewModel<State : UiState, Partial : UiPartial, Intent : UiInt
      * Method to process initial load.
      */
     protected abstract suspend fun processInit()
+
+    /**
+     * Method to encapsulate flow binding.
+     */
+    protected fun <T> Flow<T>.bind(action: suspend (value: T) -> Unit) =
+        onEach(action)
+            .catch { throwable ->
+                if (throwable is CancellationException) throw throwable
+                logError(throwable, "bind function")
+                handleError(throwable)
+            }.launchIn(scope)
 
     protected fun emitEffect(effect: Effect) {
         launch { _effect.emit(effect) }

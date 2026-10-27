@@ -5,7 +5,9 @@ import com.semenov.news.core.domain.AppLogger
 import com.semenov.news.core.domain.settings.AppSettings
 import com.semenov.news.core.domain.settings.AppSettingsStore
 import com.semenov.news.core.ui.interactions.domain.model.AppHapticEffect
+import com.semenov.news.core.ui.interactions.domain.manager.DialogManager
 import com.semenov.news.core.ui.interactions.domain.manager.HapticEffectManager
+import com.semenov.news.core.ui.interactions.domain.model.dialog.DialogDestination
 import com.semenov.news.features.auth.domain.model.AuthUser
 import com.semenov.news.features.auth.domain.session.SessionManager
 import com.semenov.news.screens.settings.model.SettingsIntent
@@ -206,16 +208,65 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `logout delegates cleanup once and prevents preference writes while waiting`() = runTest(dispatcher) {
-        val store = FakeSettingsStore()
-        val completion = CompletableDeferred<Unit>()
-        val session = FakeSessionManager(onLogout = { completion.await() })
+    fun `logout click opens confirmation without clearing account or preferences`() = runTest(dispatcher) {
+        val store = FakeSettingsStore(AppSettings(darkTheme = true))
+        val session = FakeSessionManager()
+        val dialogs = FakeDialogManager()
         val haptics = FakeHapticEffectManager()
-        val viewModel = createViewModel(store, haptics, session)
+        val viewModel = createViewModel(store, haptics, session, dialogs)
         viewModel.state
         advanceUntilIdle()
 
         viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+
+        val dialog = dialogs.currentDialog.value
+        assertTrue(dialog is DialogDestination.Logout)
+        assertEquals(R.string.settings_logout_yes, dialog?.primaryAction?.label)
+        assertEquals(R.string.settings_logout_no, dialog?.secondaryAction?.label)
+        assertEquals(0, session.logoutCalls)
+        assertEquals(AuthUser("Alex"), session.user.value)
+        assertFalse(viewModel.state.value.isLoggingOut)
+        assertTrue(store.writes.isEmpty())
+        assertEquals(listOf(AppHapticEffect.Click), haptics.performed)
+    }
+
+    @Test
+    fun `no dismisses confirmation and its old yes callback cannot log out`() = runTest(dispatcher) {
+        val session = FakeSessionManager()
+        val dialogs = FakeDialogManager()
+        val viewModel = createViewModel(FakeSettingsStore(), session = session, dialogs = dialogs)
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        val dialog = requireNotNull(dialogs.currentDialog.value)
+
+        dialog.secondaryAction?.onClick?.invoke()
+        dialogs.dismissDialog()
+        dialog.primaryAction?.onClick?.invoke()
+        advanceUntilIdle()
+
+        assertNull(dialogs.currentDialog.value)
+        assertEquals(0, session.logoutCalls)
+        assertEquals(AuthUser("Alex"), session.user.value)
+    }
+
+    @Test
+    fun `yes delegates cleanup once and prevents preference writes while waiting`() = runTest(dispatcher) {
+        val store = FakeSettingsStore()
+        val completion = CompletableDeferred<Unit>()
+        val session = FakeSessionManager(onLogout = { completion.await() })
+        val dialogs = FakeDialogManager()
+        val haptics = FakeHapticEffectManager()
+        val viewModel = createViewModel(store, haptics, session, dialogs)
+        viewModel.state
+        advanceUntilIdle()
+
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        val confirm = requireNotNull(dialogs.currentDialog.value?.primaryAction).onClick
+        confirm()
+        confirm()
+        dialogs.dismissDialog()
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isLoggingOut)
         viewModel.processIntent(SettingsIntent.DarkThemeChanged(true))
@@ -229,7 +280,7 @@ class SettingsViewModelTest {
         assertEquals(1, session.logoutCalls)
         assertNull(session.user.value)
         assertTrue(store.writes.isEmpty())
-        assertEquals(listOf(AppHapticEffect.Click), haptics.performed)
+        assertEquals(listOf(AppHapticEffect.Click, AppHapticEffect.Confirm), haptics.performed)
         assertFalse(viewModel.state.value.isLoggingOut)
     }
 
@@ -237,11 +288,16 @@ class SettingsViewModelTest {
     fun `failed cleanup keeps the account visible and permits retry`() = runTest(dispatcher) {
         var shouldFail = true
         val session = FakeSessionManager(onLogout = { if (shouldFail) error("Disk unavailable") })
-        val viewModel = createViewModel(FakeSettingsStore(), session = session)
+        val dialogs = FakeDialogManager()
+        val viewModel = createViewModel(FakeSettingsStore(), session = session, dialogs = dialogs)
         viewModel.state
         advanceUntilIdle()
 
         viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        val oldConfirm = requireNotNull(dialogs.currentDialog.value?.primaryAction).onClick
+        oldConfirm()
+        dialogs.dismissDialog()
         advanceUntilIdle()
 
         assertTrue(viewModel.state.value.logoutError)
@@ -250,7 +306,13 @@ class SettingsViewModelTest {
         assertEquals(AuthUser("Alex"), session.user.value)
 
         shouldFail = false
+        oldConfirm()
+        advanceUntilIdle()
+        assertEquals(1, session.logoutCalls)
         viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        dialogs.currentDialog.value?.primaryAction?.onClick?.invoke()
+        dialogs.dismissDialog()
         advanceUntilIdle()
 
         assertFalse(viewModel.state.value.logoutError)
@@ -258,18 +320,73 @@ class SettingsViewModelTest {
         assertEquals(2, session.logoutCalls)
     }
 
+    @Test
+    fun `confirmation from an earlier account cannot log out a new account`() = runTest(dispatcher) {
+        val session = FakeSessionManager()
+        val dialogs = FakeDialogManager()
+        val viewModel = createViewModel(FakeSettingsStore(), session = session, dialogs = dialogs)
+        viewModel.state
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        val dialog = requireNotNull(dialogs.currentDialog.value)
+
+        session.saveUser(AuthUser("Anna"))
+        advanceUntilIdle()
+        dialog.primaryAction?.onClick?.invoke()
+        advanceUntilIdle()
+
+        assertEquals(0, session.logoutCalls)
+        assertEquals(AuthUser("Anna"), session.user.value)
+    }
+
+    @Test
+    fun `a replacement confirmation invalidates the previous decision`() = runTest(dispatcher) {
+        val session = FakeSessionManager()
+        val dialogs = FakeDialogManager()
+        val viewModel = createViewModel(FakeSettingsStore(), session = session, dialogs = dialogs)
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        val oldDialog = requireNotNull(dialogs.currentDialog.value)
+
+        viewModel.processIntent(SettingsIntent.LogoutClicked)
+        advanceUntilIdle()
+        oldDialog.primaryAction?.onClick?.invoke()
+        advanceUntilIdle()
+
+        assertEquals(0, session.logoutCalls)
+        dialogs.currentDialog.value?.primaryAction?.onClick?.invoke()
+        dialogs.dismissDialog()
+        advanceUntilIdle()
+        assertEquals(1, session.logoutCalls)
+    }
+
     private fun createViewModel(
         store: AppSettingsStore,
         haptics: HapticEffectManager = FakeHapticEffectManager(),
         session: SessionManager = FakeSessionManager(),
+        dialogs: DialogManager = FakeDialogManager(),
     ) =
         SettingsViewModel(
             settingsStore = store,
             settingsReducer = SettingsReducer(),
             hapticEffectManager = haptics,
             sessionManager = session,
+            dialogManager = dialogs,
             logger = NoOpLogger,
         ).also(viewModels::add)
+
+    private class FakeDialogManager : DialogManager {
+        private val dialog = MutableStateFlow<DialogDestination?>(null)
+        override val currentDialog = dialog.asStateFlow()
+
+        override suspend fun showDialog(dialog: DialogDestination) {
+            this.dialog.value = dialog
+        }
+
+        override suspend fun dismissDialog() {
+            dialog.value = null
+        }
+    }
 
     private class FakeHapticEffectManager(
         private val onPerform: (AppHapticEffect) -> Unit = {},

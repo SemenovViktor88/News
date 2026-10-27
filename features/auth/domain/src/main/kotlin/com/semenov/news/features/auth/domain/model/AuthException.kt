@@ -6,4 +6,6 @@ sealed class AuthException(message: String) : Exception(message) {
     data object InvalidCredentials : AuthException("Incorrect user name or password")
 
     data object InvalidCode : AuthException("Incorrect verification code")
+
+    data object NotificationsUnavailable : AuthException("Enable notifications to receive a verification code")
 }

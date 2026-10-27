@@ -23,8 +23,8 @@ fun NewsNavigationHost(
     modifier: Modifier = Modifier,
 ) {
     // Inactive flows have no entries: popping their decorators clears screen state and ViewModels.
-    val authEntries = AuthFlow(active = flow == AppFlow.Auth)
-    val regularEntries = RegularFlow(
+    val authEntries = rememberAuthFlowEntries(active = flow == AppFlow.Auth)
+    val regularEntries = rememberRegularFlowEntries(
         navigationManager = navigationManager,
         activeDestination = activeDestination,
         active = flow == AppFlow.Regular,
@@ -37,7 +37,7 @@ fun NewsNavigationHost(
 }
 
 @Composable
-private fun AuthFlow(active: Boolean): List<NavEntry<NavigationKey>> =
+private fun rememberAuthFlowEntries(active: Boolean): List<NavEntry<NavigationKey>> =
     rememberDecoratedNavEntries(
         backStack = if (active) listOf(NavigationKey.Auth) else emptyList(),
         entryDecorators = listOf(
@@ -50,7 +50,7 @@ private fun AuthFlow(active: Boolean): List<NavEntry<NavigationKey>> =
     )
 
 @Composable
-private fun RegularFlow(
+private fun rememberRegularFlowEntries(
     navigationManager: NavigationManagerImpl,
     activeDestination: AppDestination,
     active: Boolean,

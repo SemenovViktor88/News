@@ -142,6 +142,39 @@ class StorageIntegrationTest {
         assertFalse(dataStore.data.first().contains(storageKey(key)))
     }
 
+    @Test
+    fun preferencesWrittenByDataStore121SurviveUpgradeAndClearStaysPersisted() = runBlocking {
+        closeStorage()
+        // Frozen protobuf produced by the 1.2.1 PreferencesProto writer, before this upgrade.
+        // Reading a fixture catches format regressions that a round trip with one version cannot.
+        InstrumentationRegistry.getInstrumentation().context.assets
+            .open("datastore-1.2.1.preferences_pb")
+            .use { input -> file.outputStream().use { output -> input.copyTo(output) } }
+        openStorage()
+
+        assertEquals(mapOf("name" to "Віктор"), storage.get("auth_user", emptyMap<String, String>()))
+        assertEquals(listOf("Новини", "android"), storage.get("bookmarks", emptyList<String>()))
+        assertEquals(false, StorageAppSettingsStore(storage).read().darkTheme)
+        assertFalse(StorageAppSettingsStore(storage).read().hapticsEnabled)
+
+        storage.put("dark_theme", true)
+        closeStorage()
+        openStorage()
+
+        assertEquals(mapOf("name" to "Віктор"), storage.get("auth_user", emptyMap<String, String>()))
+        assertEquals(true, StorageAppSettingsStore(storage).read().darkTheme)
+        assertFalse(StorageAppSettingsStore(storage).read().hapticsEnabled)
+
+        storage.deleteAll()
+        closeStorage()
+        openStorage()
+
+        assertTrue(dataStore.data.first().asMap().isEmpty())
+        assertNull(storage.get<Map<String, String>?>("auth_user", null))
+        assertNull(StorageAppSettingsStore(storage).read().darkTheme)
+        assertTrue(StorageAppSettingsStore(storage).read().hapticsEnabled)
+    }
+
     private fun openStorage() {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         dataStore = PreferenceDataStoreFactory.create(

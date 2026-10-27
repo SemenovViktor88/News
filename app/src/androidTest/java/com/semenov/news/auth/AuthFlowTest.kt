@@ -10,6 +10,8 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.test.espresso.Espresso.closeSoftKeyboard
+import androidx.test.espresso.Espresso.pressBack
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -49,14 +51,21 @@ class AuthFlowTest {
 
     @Before
     fun startWithoutSavedUser() {
-        runBlocking { dependencies.sessionManager().logout() }
+        prepareVerificationNotifications()
+        runBlocking {
+            dependencies.modalManager().dismissModal()
+            dependencies.sessionManager().logout()
+        }
         waitForTag("auth_username")
         composeRule.onNodeWithTag("navigation_home").assertDoesNotExist()
     }
 
     @After
     fun removeDemoSession() {
-        runBlocking { dependencies.sessionManager().logout() }
+        runBlocking {
+            dependencies.modalManager().dismissModal()
+            dependencies.sessionManager().logout()
+        }
     }
 
     @Test
@@ -70,20 +79,22 @@ class AuthFlowTest {
         composeRule.onNodeWithTag("auth_password").performTextReplacement("news")
         clickScrollable("auth_sign_in")
         waitForTag("auth_code")
+        val deliveredCode = composeRule.waitForVerificationCode()
         assertNoSavedUser()
         captureScreen("auth-code.png")
 
-        enterCode("0000")
+        enterCode(differentCode(deliveredCode))
         waitForTag("auth_error")
         composeRule.onNodeWithTag("auth_code").assertIsDisplayed()
         assertNoSavedUser()
 
-        enterCode("1111")
+        enterCode(deliveredCode)
         waitForTag("navigation_home")
         composeRule.onNodeWithTag("navigation_home").assertIsSelected()
         composeRule.onNodeWithTag("auth_code").assertDoesNotExist()
         assertEquals(AuthUser("віктор"), dependencies.sessionManager().user.value)
         assertEquals(AuthUser("віктор"), dependencies.storage().getBlocking<AuthUser?>("auth_user", null))
+        assertNull("A consumed code must no longer be visible in notifications", verificationNotification())
 
         openSettings()
         assertIdentity("віктор", "В")
@@ -98,7 +109,7 @@ class AuthFlowTest {
 
     @Test
     fun logoutClearsAllPreferencesAndDatabaseAndNewLoginStartsFresh() {
-        signIn("First user")
+        val firstCode = signIn("First user")
         openSettings()
         runBlocking {
             dependencies.storage().put("auth_test_unrelated_key", "saved-value")
@@ -132,6 +143,20 @@ class AuthFlowTest {
         composeRule.waitForIdle()
 
         clickScrollable("settings_logout")
+        waitForTag("app_dialog")
+        // Declining confirmation keeps the active user and all stored data intact.
+        composeRule.onNodeWithTag("dialog_secondary_action").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("app_dialog").assertDoesNotExist()
+        assertEquals(AuthUser("First user"), dependencies.sessionManager().user.value)
+        assertEquals("saved-value", dependencies.storage().getBlocking("auth_test_unrelated_key", "missing"))
+        runBlocking {
+            assertEquals(1, dependencies.database().articleDao().articlesForPage("auth-test-context", 1).size)
+        }
+
+        clickScrollable("settings_logout")
+        waitForTag("app_dialog")
+        composeRule.onNodeWithTag("dialog_primary_action").performClick()
         waitForTag("auth_username")
         assertNoSavedUser()
         assertEquals("missing", dependencies.storage().getBlocking("auth_test_unrelated_key", "missing"))
@@ -142,10 +167,16 @@ class AuthFlowTest {
         // Back from a new auth challenge must stay in auth, without restoring the old regular flow.
         enterCredentials("Anna", "news")
         waitForTag("auth_code")
-        composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
+        composeRule.waitForVerificationCode(previousCode = firstCode)
+        closeSoftKeyboard()
+        pressBack()
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithTag("auth_modal").fetchSemanticsNodes().isEmpty()
+        }
         waitForTag("auth_username")
         composeRule.onNodeWithTag("navigation_settings").assertDoesNotExist()
         assertNoSavedUser()
+        assertNull("Dismissing the challenge must remove its notification", verificationNotification())
 
         composeRule.activityRule.scenario.recreate()
         waitForTag("auth_username")
@@ -156,12 +187,38 @@ class AuthFlowTest {
         assertIdentity("Anna", "A")
     }
 
-    private fun signIn(name: String) {
+    @Test
+    fun resendDeliversANewNotificationCodeAndInvalidatesThePreviousCode() {
+        enterCredentials("Resend user", "news")
+        waitForTag("auth_code")
+        val originalCode = composeRule.waitForVerificationCode()
+
+        composeRule.onNodeWithTag("auth_resend").performClick()
+        val resentCode = composeRule.waitForVerificationCode(previousCode = originalCode)
+        composeRule.waitForIdle()
+
+        enterCode(originalCode)
+        waitForTag("auth_error")
+        assertNoSavedUser()
+        composeRule.onNodeWithTag("auth_code").assertIsDisplayed()
+
+        enterCode(resentCode)
+        waitForTag("navigation_home")
+        assertEquals(AuthUser("Resend user"), dependencies.sessionManager().user.value)
+        assertNull("A consumed code must no longer be visible in notifications", verificationNotification())
+    }
+
+    private fun signIn(name: String): String {
         enterCredentials(name, "news")
         waitForTag("auth_code")
-        enterCode("1111")
+        val deliveredCode = composeRule.waitForVerificationCode()
+        enterCode(deliveredCode)
         waitForTag("navigation_home")
+        return deliveredCode
     }
+
+    private fun differentCode(code: String): String =
+        ((code.toInt() + 1) % 10_000).toString().padStart(4, '0')
 
     private fun enterCredentials(name: String, password: String) {
         composeRule.onNodeWithTag("auth_username").performTextReplacement(name)
@@ -171,7 +228,6 @@ class AuthFlowTest {
 
     private fun enterCode(code: String) {
         composeRule.onNodeWithTag("auth_code").performTextReplacement(code)
-        clickScrollable("auth_verify")
     }
 
     private fun openSettings() {
@@ -222,7 +278,11 @@ class AuthFlowTest {
     }
 
     private fun captureScreen(filename: String) {
-        val bitmap = composeRule.onRoot().captureToImage().asAndroidBitmap()
+        val bitmap = if (composeRule.onAllNodesWithTag("auth_modal").fetchSemanticsNodes().isNotEmpty()) {
+            requireNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
+        } else {
+            composeRule.onRoot().captureToImage().asAndroidBitmap()
+        }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         context.openFileOutput(filename, Context.MODE_PRIVATE).use { output ->
             assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))

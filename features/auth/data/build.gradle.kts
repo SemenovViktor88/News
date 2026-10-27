@@ -24,6 +24,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:storage:domain"))
     implementation(project(":core:db"))
+    implementation(project(":core:ui:interactions:domain"))
     implementation(libs.room.runtime)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.core)

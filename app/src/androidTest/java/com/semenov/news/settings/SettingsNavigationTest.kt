@@ -18,6 +18,8 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.semenov.news.auth.prepareVerificationNotifications
+import com.semenov.news.auth.waitForVerificationCode
 import com.semenov.news.main.MainActivity
 import com.semenov.news.core.ui.designsystem.theme.newsPalette
 import org.junit.Assert.assertEquals
@@ -34,6 +36,7 @@ class SettingsNavigationTest {
 
     @Before
     fun signInIfNeeded() {
+        prepareVerificationNotifications()
         composeRule.waitUntil(timeoutMillis = 10_000) {
             composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("auth_username"))
                 .fetchSemanticsNodes().isNotEmpty() ||
@@ -50,8 +53,7 @@ class SettingsNavigationTest {
                 composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("auth_code"))
                     .fetchSemanticsNodes().isNotEmpty()
             }
-            composeRule.onNodeWithTag("auth_code").performTextInput("1111")
-            composeRule.onNodeWithTag("auth_verify").performScrollTo().performClick()
+            composeRule.onNodeWithTag("auth_code").performTextInput(composeRule.waitForVerificationCode())
             composeRule.waitUntil(timeoutMillis = 10_000) {
                 composeRule.onAllNodes(androidx.compose.ui.test.hasTestTag("navigation_settings"))
                     .fetchSemanticsNodes().isNotEmpty()

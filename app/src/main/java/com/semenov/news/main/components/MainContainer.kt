@@ -1,12 +1,9 @@
 package com.semenov.news.main.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -23,7 +20,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.semenov.news.R
+import com.semenov.news.core.ui.designsystem.icon.NewsIcons
 import com.semenov.news.core.ui.mvi.presentation.BaseScreen
+import com.semenov.news.core.ui.interactions.presentation.dialog.DialogComponent
+import com.semenov.news.core.ui.interactions.presentation.modal.ModalComponent
 import com.semenov.news.core.ui.navigation.domain.AppDestination
 import com.semenov.news.core.ui.navigation.domain.AppFlow
 import com.semenov.news.core.ui.navigation.presentation.NavigationManagerImpl
@@ -43,29 +43,41 @@ fun MainContainer(
         state = state,
         init = viewModel::initialize,
     ) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background,
-            bottomBar = {
-                if (state.flow == AppFlow.Regular) {
-                    MainBottomBar(
-                        activeDestination = state.activeDestination,
-                        onDestinationSelected = {
-                            viewModel.processIntent(MainIntent.DestinationSelected(it))
-                        },
-                    )
-                }
-            },
-        ) { contentPadding ->
-            NewsNavigationHost(
-                navigationManager = navigationManager,
-                activeDestination = state.activeDestination,
-                flow = state.flow,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(contentPadding)
-                        .consumeWindowInsets(contentPadding),
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = MaterialTheme.colorScheme.background,
+                bottomBar = {
+                    if (state.flow == AppFlow.Regular) {
+                        MainBottomBar(
+                            activeDestination = state.activeDestination,
+                            onDestinationSelected = {
+                                viewModel.processIntent(MainIntent.DestinationSelected(it))
+                            },
+                        )
+                    }
+                },
+            ) { contentPadding ->
+                NewsNavigationHost(
+                    navigationManager = navigationManager,
+                    activeDestination = state.activeDestination,
+                    flow = state.flow,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(contentPadding)
+                            .consumeWindowInsets(contentPadding),
+                )
+            }
+            ModalComponent(
+                modal = state.modal,
+                requestDismiss = {
+                    state.modal?.id?.let { viewModel.processIntent(MainIntent.DismissModal(it)) }
+                },
+            )
+            DialogComponent(
+                dialog = state.dialog,
+                onDismissRequest = { viewModel.processIntent(MainIntent.DismissDialog) },
             )
         }
     }
@@ -118,19 +130,19 @@ private val MAIN_DESTINATIONS =
         MainDestinationItem(
             destination = AppDestination.Home,
             labelRes = R.string.navigation_home,
-            icon = Icons.Outlined.Home,
+            icon = NewsIcons.Home,
             testTag = "navigation_home",
         ),
         MainDestinationItem(
             destination = AppDestination.Categories,
             labelRes = R.string.navigation_categories,
-            icon = Icons.AutoMirrored.Outlined.List,
+            icon = NewsIcons.Categories,
             testTag = "navigation_categories",
         ),
         MainDestinationItem(
             destination = AppDestination.Settings,
             labelRes = R.string.navigation_settings,
-            icon = Icons.Outlined.Settings,
+            icon = NewsIcons.Settings,
             testTag = "navigation_settings",
         ),
     )

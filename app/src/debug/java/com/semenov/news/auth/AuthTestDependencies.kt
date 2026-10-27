@@ -3,6 +3,7 @@ package com.semenov.news.auth
 import com.semenov.news.core.db.NewsDatabase
 import com.semenov.news.core.domain.settings.AppSettingsStore
 import com.semenov.news.core.storage.domain.Storage
+import com.semenov.news.core.ui.interactions.domain.manager.ModalManager
 import com.semenov.news.features.auth.domain.session.SessionManager
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -16,4 +17,5 @@ interface AuthTestDependencies {
     fun storage(): Storage
     fun settingsStore(): AppSettingsStore
     fun database(): NewsDatabase
+    fun modalManager(): ModalManager
 }

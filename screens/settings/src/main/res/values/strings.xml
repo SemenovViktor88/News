@@ -15,6 +15,8 @@
     <string name="settings_lamp_off">Light off</string>
     <string name="settings_pull_hint">Pull the cord. Set the mood.</string>
     <string name="settings_logout">Log out</string>
+    <string name="settings_logout_yes">Yes</string>
+    <string name="settings_logout_no">No</string>
     <string name="settings_logging_out">Logging out…</string>
     <string name="settings_logout_error">Couldn’t log out. Please try again.</string>
 </resources>

@@ -22,8 +22,12 @@ android {
 
 dependencies {
     api(project(":core:ui:interactions:domain"))
+    implementation(project(":core:ui:designsystem"))
     api(platform(libs.androidx.compose.bom))
     api(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.core)

@@ -18,5 +18,9 @@ class MainReducer @Inject constructor() : Reducer<MainState, MainPartial> {
                 old.copy(darkTheme = partial.darkTheme)
             is MainPartial.FlowChanged ->
                 old.copy(flow = partial.flow, activeDestination = AppDestination.Home)
+            is MainPartial.DialogUpdated ->
+                old.copy(dialog = partial.dialog)
+            is MainPartial.ModalUpdated ->
+                old.copy(modal = partial.modal)
         }
 }

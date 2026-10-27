@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -46,7 +44,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.semenov.news.core.ui.designsystem.theme.NewsTheme
@@ -60,13 +57,17 @@ fun AuthContent(
     state: AuthState,
     onIntent: (AuthIntent) -> Unit,
     modifier: Modifier = Modifier,
+    isPermissionRequestPending: Boolean = false,
+    onOpenNotificationSettings: () -> Unit = {},
 ) {
     val palette = NewsTheme.colors
     val focusManager = LocalFocusManager.current
-    val isLogin = state.stage == AuthStage.Login
+    val enabled = state.stage == AuthStage.Login && !state.isSubmitting && !isPermissionRequestPending
     val submit = {
-        focusManager.clearFocus()
-        onIntent(if (isLogin) AuthIntent.SignIn else AuthIntent.VerifyCode)
+        if (enabled && state.userName.isNotBlank() && state.password.isNotEmpty()) {
+            focusManager.clearFocus()
+            onIntent(AuthIntent.SignIn)
+        }
     }
     Box(
         modifier = modifier.fillMaxSize().background(palette.background).safeDrawingPadding().imePadding(),
@@ -76,32 +77,8 @@ fun AuthContent(
             modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth()
                 .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 28.dp),
         ) {
-//            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-//                Box(
-//                    modifier = Modifier.size(48.dp).background(palette.avatarBackground, CircleShape),
-//                    contentAlignment = Alignment.Center,
-//                ) {
-//                    Text("N", color = palette.avatarText, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
-//                }
-//                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-//                    Text(stringResource(R.string.auth_app_name), color = palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-//                    Text(stringResource(R.string.auth_tagline), color = palette.secondaryText, fontSize = 13.sp)
-//                }
-//            }
-//            Spacer(Modifier.height(36.dp))
-//            Surface(color = palette.iconBackground, shape = RoundedCornerShape(50)) {
-//                Text(
-//                    stringResource(if (isLogin) R.string.auth_step_login else R.string.auth_step_code),
-//                    modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
-//                    color = palette.accent,
-//                    fontSize = 11.sp,
-//                    fontWeight = FontWeight.SemiBold,
-//                    letterSpacing = 1.sp,
-//                )
-//            }
-//            Spacer(Modifier.height(14.dp))
             Text(
-                stringResource(if (isLogin) R.string.auth_welcome else R.string.auth_verify_title),
+                stringResource(R.string.auth_welcome),
                 color = palette.text,
                 fontSize = 36.sp,
                 lineHeight = 40.sp,
@@ -109,8 +86,7 @@ fun AuthContent(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                if (isLogin) stringResource(R.string.auth_login_description)
-                else stringResource(R.string.auth_code_description, state.userName),
+                stringResource(R.string.auth_login_description),
                 color = palette.secondaryText,
                 fontSize = 15.sp,
                 lineHeight = 22.sp,
@@ -121,46 +97,36 @@ fun AuthContent(
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    if (isLogin) {
-                        LoginFields(state, onIntent, submit)
-                    } else {
-                        CodeField(state, onIntent, submit)
-                    }
-                    state.error?.let { error ->
-                        Text(
-                            text = error.message(),
-                            modifier = Modifier.testTag("auth_error").semantics { liveRegion = LiveRegionMode.Polite },
-                            color = palette.error,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
+                    LoginFields(state, enabled, onIntent, submit)
+                    if (state.stage == AuthStage.Login) {
+                        state.error?.let { error ->
+                            Text(
+                                text = error.message(),
+                                modifier = Modifier.testTag("auth_error").semantics { liveRegion = LiveRegionMode.Polite },
+                                color = palette.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            if (error == AuthError.NotificationsUnavailable) {
+                                TextButton(
+                                    onClick = onOpenNotificationSettings,
+                                    modifier = Modifier.testTag("auth_notification_settings"),
+                                ) {
+                                    Text(stringResource(R.string.auth_notification_settings))
+                                }
+                            }
+                        }
                     }
                     Button(
                         onClick = submit,
-                        enabled = !state.isSubmitting &&
-                            if (isLogin) state.userName.isNotBlank() && state.password.isNotEmpty() else state.code.length == 4,
-                        modifier = Modifier.fillMaxWidth().height(54.dp)
-                            .testTag(if (isLogin) "auth_sign_in" else "auth_verify"),
+                        enabled = enabled && state.userName.isNotBlank() && state.password.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth().height(54.dp).testTag("auth_sign_in"),
                         shape = RoundedCornerShape(17.dp),
                     ) {
-                        if (state.isSubmitting) {
+                        if (state.isSubmitting && state.stage == AuthStage.Login) {
                             CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp, color = palette.checkedThumb)
                         } else {
-                            Text(
-                                stringResource(if (isLogin) R.string.auth_continue else R.string.auth_verify_button),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
+                            Text(stringResource(R.string.auth_continue), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         }
-                    }
-                    if (!isLogin) {
-                        TextButton(
-                            onClick = {
-                                focusManager.clearFocus()
-                                onIntent(AuthIntent.BackToLogin)
-                            },
-                            enabled = !state.isSubmitting,
-                            modifier = Modifier.fillMaxWidth().testTag("auth_back"),
-                        ) { Text(stringResource(R.string.auth_change_user)) }
                     }
                 }
             }
@@ -174,7 +140,7 @@ fun AuthContent(
             )
             Spacer(Modifier.height(5.dp))
             Text(
-                stringResource(if (isLogin) R.string.auth_demo_login else R.string.auth_demo_code),
+                stringResource(R.string.auth_demo_login),
                 modifier = Modifier.testTag("auth_demo_hint"),
                 color = palette.secondaryText,
                 fontSize = 13.sp,
@@ -185,7 +151,7 @@ fun AuthContent(
 }
 
 @Composable
-private fun LoginFields(state: AuthState, onIntent: (AuthIntent) -> Unit, onSubmit: () -> Unit) {
+private fun LoginFields(state: AuthState, enabled: Boolean, onIntent: (AuthIntent) -> Unit, onSubmit: () -> Unit) {
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
     OutlinedTextField(
@@ -196,7 +162,7 @@ private fun LoginFields(state: AuthState, onIntent: (AuthIntent) -> Unit, onSubm
             Text(stringResource(R.string.auth_name_length, state.userName.codePointCount(0, state.userName.length)))
         },
         modifier = Modifier.fillMaxWidth().testTag("auth_username"),
-        enabled = !state.isSubmitting,
+        enabled = enabled,
         isError = state.error == AuthError.InvalidUserName,
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
@@ -209,41 +175,19 @@ private fun LoginFields(state: AuthState, onIntent: (AuthIntent) -> Unit, onSubm
         onValueChange = { onIntent(AuthIntent.PasswordChanged(it)) },
         label = { Text(stringResource(R.string.auth_password)) },
         trailingIcon = {
-            TextButton(onClick = { passwordVisible = !passwordVisible }, enabled = !state.isSubmitting) {
+            TextButton(onClick = { passwordVisible = !passwordVisible }, enabled = enabled) {
                 Text(stringResource(if (passwordVisible) R.string.auth_hide_password else R.string.auth_show_password), fontSize = 12.sp)
             }
         },
         modifier = Modifier.fillMaxWidth().testTag("auth_password"),
-        enabled = !state.isSubmitting,
+        enabled = enabled,
         isError = state.error == AuthError.InvalidCredentials,
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
         colors = authFieldColors(),
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { if (!state.isSubmitting) onSubmit() }),
-    )
-}
-
-@Composable
-private fun CodeField(state: AuthState, onIntent: (AuthIntent) -> Unit, onSubmit: () -> Unit) {
-    OutlinedTextField(
-        value = state.code,
-        onValueChange = { onIntent(AuthIntent.CodeChanged(it)) },
-        label = { Text(stringResource(R.string.auth_code_label)) },
-        modifier = Modifier.fillMaxWidth().testTag("auth_code"),
-        enabled = !state.isSubmitting,
-        isError = state.error == AuthError.InvalidCode,
-        singleLine = true,
-        shape = RoundedCornerShape(16.dp),
-        colors = authFieldColors(),
-        textStyle = MaterialTheme.typography.headlineMedium.copy(
-            textAlign = TextAlign.Center,
-            letterSpacing = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-        ),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { if (state.code.length == 4 && !state.isSubmitting) onSubmit() }),
+        keyboardActions = KeyboardActions(onDone = { if (enabled) onSubmit() }),
     )
 }
 
@@ -261,6 +205,7 @@ private fun AuthError.message(): String = stringResource(
         AuthError.InvalidUserName -> R.string.auth_error_user_name
         AuthError.InvalidCredentials -> R.string.auth_error_credentials
         AuthError.InvalidCode -> R.string.auth_error_code
+        AuthError.NotificationsUnavailable -> R.string.auth_error_notifications
         AuthError.Unavailable -> R.string.auth_error_unavailable
     },
 )

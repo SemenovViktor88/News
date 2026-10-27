@@ -3,7 +3,6 @@ package com.semenov.news.screens.settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -37,13 +37,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -54,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.semenov.news.core.ui.designsystem.icon.NewsIcons
 import com.semenov.news.core.ui.designsystem.theme.NewsPalette
 import com.semenov.news.core.ui.designsystem.theme.NewsTheme
 import com.semenov.news.core.ui.designsystem.theme.NewsColors
@@ -330,7 +327,12 @@ private fun PreferenceRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        PreferenceIcon(moon = moonIcon, palette = palette)
+        Icon(
+            imageVector = if (moonIcon) NewsIcons.DarkTheme else NewsIcons.HapticFeedback,
+            contentDescription = null,
+            modifier = Modifier.size(44.dp).background(palette.iconBackground, CircleShape),
+            tint = palette.accent,
+        )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = title,
@@ -359,50 +361,6 @@ private fun PreferenceRow(
                     uncheckedBorderColor = NewsColors.transparent,
                 ),
         )
-    }
-}
-
-@Composable
-private fun PreferenceIcon(moon: Boolean, palette: NewsPalette) {
-    Canvas(modifier = Modifier.size(44.dp).background(palette.iconBackground, CircleShape)) {
-        val center = this.center
-        val unit = size.width / 44f
-        if (moon) {
-            drawCircle(color = palette.accent, radius = 10f * unit, center = center)
-            drawCircle(
-                color = palette.iconBackground,
-                radius = 9f * unit,
-                center = center + Offset(5f * unit, -4f * unit),
-            )
-        } else {
-            drawRoundRect(
-                color = palette.accent,
-                topLeft = Offset(16f * unit, 12f * unit),
-                size = Size(12f * unit, 20f * unit),
-                cornerRadius = CornerRadius(2.5f * unit),
-                style = Stroke(width = 1.8f * unit, cap = StrokeCap.Round),
-            )
-            drawLine(
-                color = palette.accent,
-                start = Offset(20f * unit, 28.5f * unit),
-                end = Offset(24f * unit, 28.5f * unit),
-                strokeWidth = 1.8f * unit,
-                cap = StrokeCap.Round,
-            )
-            val vibration = Path().apply {
-                moveTo(11f * unit, 15f * unit)
-                lineTo(8.5f * unit, 18.5f * unit)
-                lineTo(11f * unit, 22f * unit)
-                lineTo(8.5f * unit, 25.5f * unit)
-                lineTo(11f * unit, 29f * unit)
-                moveTo(33f * unit, 15f * unit)
-                lineTo(35.5f * unit, 18.5f * unit)
-                lineTo(33f * unit, 22f * unit)
-                lineTo(35.5f * unit, 25.5f * unit)
-                lineTo(33f * unit, 29f * unit)
-            }
-            drawPath(vibration, palette.accent, style = Stroke(1.8f * unit, cap = StrokeCap.Round))
-        }
     }
 }
 
