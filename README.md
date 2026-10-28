@@ -112,38 +112,6 @@ entire DataStore and every Room table, restores default preferences, and returns
 to sign-in. A cache generation guard prevents pending news requests from
 writing data from the previous session after cleanup.
 
-### System notifications
-
-`core:ui:interactions:domain` exposes a shared `NotificationManager`, bound as a
-Hilt singleton by `core:ui:interactions:data`. Add the domain dependency to a
-screen module and inject the manager into its ViewModel like the dialog or modal
-manager. In a suspend intent handler, post a notification with localized strings
-provided by the feature:
-
-```kotlin
-notificationManager.show(
-    AppNotification(
-        id = 100,
-        channel = AppNotificationChannel(id = "news_updates", name = channelName),
-        title = title,
-        message = message,
-    ),
-)
-```
-
-Stable IDs identify notifications across the app: posting the same ID replaces
-its notification. `dismiss(id)` removes one and `dismissAll()` clears all app
-notifications. Blocking variants are available for synchronous callers. Channels
-configure importance; each notification also supports visibility, timeout, and
-auto-cancel on tap. Tapping a notification opens the app.
-
-The manager dispatches directly to Android and works without an Activity or a
-Compose collector. `show` returns `false` when notification permission, app
-notifications, or the channel is disabled. The foreground screen owns the system
-permission request; AuthScreen requests it when Continue is pressed. Verification
-codes use the same manager through the feature's `AuthCodeNotifier` adapter.
-Notification payloads are excluded from manager logs.
-
 ## Module structure
 
 ```text
